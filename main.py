@@ -1,13 +1,12 @@
 import weat
 import pandas as pd
+import random
 
 FILE_NAME = "word_sets.csv"
 
-#TODO: github!
 #TODO: train own embeddings
 #TODO: include PoS-Tagging
 #TODO: make requirements.txt
-#TODO: implement baseline (random word set?)
 
 def load_pretrained_embeddings(glove_file):
     """ function to read in pretrained embedding vectors from a 6b glove file
@@ -22,7 +21,9 @@ def load_pretrained_embeddings(glove_file):
             embedding_dict[word] = vector
     return embedding_dict
 
-#TODO: make word sets real word sets or rename to list?
+#TODO: make word sets real word sets or rename to list? connected with PoS problem
+#TODO: maybe load two word sets by metaphor_id
+#TODO: maybe make metaphor_id array, so that one word set can belong to multiple metaphors (e.g. life)
 def load_word_set_from_csv(set):
     """ function to read prepared word set from a csv of the following structure
         word, pos (part of speech), set (belonging to word set), metaphor_id (distinguishing the different metaphors
@@ -42,9 +43,13 @@ if __name__ == '__main__':
     emb_dict = load_pretrained_embeddings('glove.6B.50d.txt')
     A = [emb_dict[x] for x in importance_set]
     B = [emb_dict[x] for x in size_set]
-    print(weat.set_s(A, A))
-    # TODO: include POS
-    """X_list = ['raise', 'rise', 'lift', 'climb', 'mount', 'reach', 'surge', 'elevate', 'height', 'top', 'mountain',
+    baseline_set = [random.choice(list(emb_dict.values())) for x in size_set]
+    print('similarity importance and size: {}'.format(weat.set_s(A, B)))
+    print('baseline similarity, importance and random: {}'.format(weat.set_s(A, baseline_set)))
+    # TODO: include PoS
+    """
+    # up is good, bad is down
+    X_list = ['raise', 'rise', 'lift', 'climb', 'mount', 'reach', 'surge', 'elevate', 'height', 'top', 'mountain',
               'elevation', 'raise', 'ascent', 'peak', 'summit', 'tip', 'high', 'tall', 'top', 'upper', 'large',
               'rising',
               'elevated', 'raised', 'upward', 'ascending', 'up', 'above']
@@ -61,14 +66,7 @@ if __name__ == '__main__':
               'sick', 'difficult', 'serious', 'unfortunate', 'painful', 'cruel', 'evil']
 """
     # TODO: rewrite for only 2 sets of associations instead of 4
-"""
-    # vectorize
-    X = [emb_dict[x] for x in X_list]
-    Y = [emb_dict[x] for x in Y_list]
-    A = [emb_dict[x] for x in A_list]
-    B = [emb_dict[x] for x in B_list]
-    print('The test statistic for this category is: {}'.format(weat.test_statistic(X, Y, A, B)))
-    print('The test effect size is: {}'.format(weat.effect_size(X, Y, A, B)))
-"""
 
     # TODO: visualize results!
+    #   similarity inside of sets (similarity matrix?)
+    #   similarity numbers of sets and baseline with matplotlib.pyplot Streu- oder Liniendiagramm
