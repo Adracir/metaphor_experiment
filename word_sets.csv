@@ -54,7 +54,7 @@ energize,V,active,2
 motivate,V,active,2
 move,V,active,2
 start,V,active,2
-actify,V,active,2
+stimulate,V,active,2
 action,N,active,2
 activity,N,active,2
 activation,N,active,2
@@ -71,6 +71,31 @@ energetic,A,active,2
 enthusiastic,A,active,2
 mobile,A,active,2
 athletic,A,active,2
+live,V,life,2.3.6
+be,V,life,2.3.6
+breathe,V,life,2.3.6
+exist,V,life,2.3.6
+survive,V,life,2.3.6
+persist,V,life,2.3.6
+experience,V,life,2.3.6
+endure,V,life,2.3.6
+life,N,life,2.3.6
+being,N,life,2.3.6
+liveliness,N,life,2.3.6
+vitality,N,life,2.3.6
+existence,N,life,2.3.6
+survival,N,life,2.3.6
+lifetime,N,life,2.3.6
+growth,N,life,2.3.6
+living,A,life,2.3.6
+alive,A,life,2.3.6
+vital,A,life,2.3.6
+breathing,A,life,2.3.6
+animate,A,life,2.3.6
+existing,A,life,2.3.6
+growing,A,life,2.3.6
+live,A,life,2.3.6
+
 
 
 

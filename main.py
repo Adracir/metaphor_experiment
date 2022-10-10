@@ -36,14 +36,15 @@ def load_word_set_from_csv(set):
 
 
 if __name__ == '__main__':
-
-    importance_set = load_word_set_from_csv("importance")
-    size_set = load_word_set_from_csv("size")
+   # importance_set = load_word_set_from_csv("importance")
+    #size_set = load_word_set_from_csv("size")
+    active_set = load_word_set_from_csv("active")
+    life_set = load_word_set_from_csv("life")
     # get dictionary of word --> embedding from glove file
     emb_dict = load_pretrained_embeddings('glove.6B.50d.txt')
-    A = [emb_dict[x] for x in importance_set]
-    B = [emb_dict[x] for x in size_set]
-    baseline_set = [random.choice(list(emb_dict.values())) for x in size_set]
+    A = [emb_dict[x] for x in active_set]
+    B = [emb_dict[x] for x in life_set]
+    baseline_set = [random.choice(list(emb_dict.values())) for x in life_set]
     print('similarity importance and size: {}'.format(weat.set_s(A, B)))
     print('baseline similarity, importance and random: {}'.format(weat.set_s(A, baseline_set)))
     # TODO: include PoS
