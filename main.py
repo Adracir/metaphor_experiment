@@ -1,6 +1,14 @@
 import weat
 import pandas as pd
 import random
+from nltk.tokenize import sent_tokenize, word_tokenize
+
+import warnings
+
+warnings.filterwarnings(action='ignore')
+
+import gensim
+from gensim.models import Word2Vec
 
 FILE_NAME = "word_sets.csv"
 
@@ -21,6 +29,33 @@ def load_pretrained_embeddings(glove_file):
             embedding_dict[word] = vector
     return embedding_dict
 
+def read_text_data():
+    #  Reads ‘alice.txt’ file
+    sample = open(file='data/alice_in_wonderland.txt', encoding="utf8")
+    return sample.read()
+
+def preprocess_text(s):
+    #sent_detector = nltk.data.load('tokenizers/punkt/english.pickle')
+    # Replaces escape character with space
+    f = s.replace("\n", " ")
+
+    data = []
+
+    # iterate through each sentence in the file
+    for i in sent_tokenize(f):
+        temp = []
+
+        # tokenize the sentence into words
+        for j in word_tokenize(i):
+            temp.append(j.lower())
+
+        data.append(temp)
+    return data
+
+def make_word_emb_model(data):
+    return gensim.models.Word2Vec(data, min_count = 1,
+                              vector_size = 100, window = 5)
+
 #TODO: make word sets real word sets or rename to list? connected with PoS problem
 #TODO: maybe load two word sets by metaphor_id
 #TODO: maybe make metaphor_id array, so that one word set can belong to multiple metaphors (e.g. life)
@@ -36,7 +71,18 @@ def load_word_set_from_csv(set):
 
 
 if __name__ == '__main__':
-   # importance_set = load_word_set_from_csv("importance")
+    s = read_text_data()
+    data = preprocess_text(s)
+    model = make_word_emb_model(data)
+    print("Cosine similarity between 'alice' " +
+          "and 'wonderland' - CBOW : ",
+          model.wv.similarity('alice', 'wonderland'))
+
+    print("Cosine similarity between 'bottle' " +
+          "and 'cake' - CBOW : ",
+          model.wv.similarity('bottle', 'cake'))
+
+    '''# importance_set = load_word_set_from_csv("importance")
     #size_set = load_word_set_from_csv("size")
     active_set = load_word_set_from_csv("active")
     life_set = load_word_set_from_csv("life")
@@ -47,6 +93,7 @@ if __name__ == '__main__':
     baseline_set = [random.choice(list(emb_dict.values())) for x in life_set]
     print('similarity importance and size: {}'.format(weat.set_s(A, B)))
     print('baseline similarity, importance and random: {}'.format(weat.set_s(A, baseline_set)))
+    '''
     # TODO: include PoS
     """
     # up is good, bad is down
@@ -65,7 +112,7 @@ if __name__ == '__main__':
     B_list = ['lose', 'fail', 'suffer', 'impair', 'worsen', 'aggravate', 'deteriorate', 'sicken', 'fault', 'error',
               'evil', 'damage', 'harm', 'badness', 'bad', 'deterioration', 'bad', 'sad', 'dangerous', 'terrible',
               'sick', 'difficult', 'serious', 'unfortunate', 'painful', 'cruel', 'evil']
-"""
+    """
     # TODO: rewrite for only 2 sets of associations instead of 4
 
     # TODO: visualize results!
