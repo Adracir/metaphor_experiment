@@ -1,3 +1,5 @@
+import nltk
+
 import weat
 import pandas as pd
 import random
@@ -12,8 +14,9 @@ from gensim.models import Word2Vec
 
 FILE_NAME = "word_sets.csv"
 
-#TODO: train own embeddings
-#TODO: include PoS-Tagging
+#TODO: train own embeddings with "real" database
+#   wikipedia
+#   gutenberg?
 #TODO: make requirements.txt
 
 def load_pretrained_embeddings(glove_file):
@@ -35,7 +38,6 @@ def read_text_data():
     return sample.read()
 
 def preprocess_text(s):
-    #sent_detector = nltk.data.load('tokenizers/punkt/english.pickle')
     # Replaces escape character with space
     f = s.replace("\n", " ")
 
@@ -48,11 +50,18 @@ def preprocess_text(s):
         # tokenize the sentence into words
         for j in word_tokenize(i):
             temp.append(j.lower())
-
-        data.append(temp)
+        # TODO: improve code here! (but it seems, second for loop cannot be avoided)
+        tagged = nltk.pos_tag(temp)
+        # TODO: wie mit Pluralen etc umgehen? POS-Tags zusammenfassen?
+        #   Liste hier: https://www.guru99.com/pos-tagging-chunking-nltk.html
+        temp2 = []
+        for t in tagged:
+            temp2.append(t[0] + "_" + t[1])
+        data.append(temp2)
     return data
 
 def make_word_emb_model(data):
+    # TODO: try if skipgram or CBOW (here, default) work better!
     return gensim.models.Word2Vec(data, min_count = 1,
                               vector_size = 100, window = 5)
 
@@ -71,16 +80,33 @@ def load_word_set_from_csv(set):
 
 
 if __name__ == '__main__':
-    s = read_text_data()
-    data = preprocess_text(s)
-    model = make_word_emb_model(data)
-    print("Cosine similarity between 'alice' " +
-          "and 'wonderland' - CBOW : ",
-          model.wv.similarity('alice', 'wonderland'))
+    #s = read_text_data()
+    #data = preprocess_text(s)
+    #model = make_word_emb_model(data)
+    model = Word2Vec.load("word2vec.model")
+    #TODO: training needed for better results?
+    print("Cosine similarity between 'machines' " +
+          "and 'cat' - CBOW : ",
+          model.wv.similarity("machines_NNS", "cat_NN"))
+    '''word_key = ''
+    for index, word in enumerate(model.wv.index_to_key):
+        if index == 10:
+            word_key = word
+            break
+        print(f"word #{index}/{len(model.wv.index_to_key)} is {word}")
+    print(f"word_key: {word_key}")
+    vector = model.wv[word_key]
+    print(f"vector by word_key {word_key}: {vector}")'''
+    # TODO: KeyError: "Key 'said' not present" bei model.wv[word_key]
+    #   erstmal nur model.wv.get_vector(word_key) nutzen
+    #   ansonsten nochmal nach anderen Lösungen suchen
+    #   wie z.B. similarity nutzen?
+    model.save("word2vec.model")
 
-    print("Cosine similarity between 'bottle' " +
+
+    '''print("Cosine similarity between 'bottle' " +
           "and 'cake' - CBOW : ",
-          model.wv.similarity('bottle', 'cake'))
+          model.wv.similarity('bottle', 'cake'))'''
 
     '''# importance_set = load_word_set_from_csv("importance")
     #size_set = load_word_set_from_csv("size")
@@ -94,7 +120,7 @@ if __name__ == '__main__':
     print('similarity importance and size: {}'.format(weat.set_s(A, B)))
     print('baseline similarity, importance and random: {}'.format(weat.set_s(A, baseline_set)))
     '''
-    # TODO: include PoS
+    # TODO: improve baseline, use sets that are similarly homogenous to the source sets
     """
     # up is good, bad is down
     X_list = ['raise', 'rise', 'lift', 'climb', 'mount', 'reach', 'surge', 'elevate', 'height', 'top', 'mountain',
@@ -113,7 +139,6 @@ if __name__ == '__main__':
               'evil', 'damage', 'harm', 'badness', 'bad', 'deterioration', 'bad', 'sad', 'dangerous', 'terrible',
               'sick', 'difficult', 'serious', 'unfortunate', 'painful', 'cruel', 'evil']
     """
-    # TODO: rewrite for only 2 sets of associations instead of 4
 
     # TODO: visualize results!
     #   similarity inside of sets (similarity matrix?)
