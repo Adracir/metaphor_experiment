@@ -4,6 +4,7 @@
 from scipy import spatial
 import numpy as np
 
+# TODO: still needed?
 #TODO: adapt WEAT to fit my problems
 def cosine_similarity(vec1, vec2):
     """calculate cosine similarity of two word vectors
