@@ -15,10 +15,8 @@ import gensim
 from gensim.models import Word2Vec
 
 WORD_DOMAIN_SETS_FILE = "word_sets.csv"
-WIKI_DUMP = "/data/wiki/enwiki-latest-pages-articles-multistream.xml"
 
-# TODO: preprocess Wikipedia
-#  (https://towardsdatascience.com/pre-processing-a-wikipedia-dump-for-nlp-model-training-a-write-up-3b9176fdf67)
+# TODO: move code to different files, e.g. "corpora.py", "embeddings.py" etc.
 # TODO: train own embeddings with "real" database
 #   wikipedia
 #   gutenberg?
@@ -43,15 +41,6 @@ def load_pretrained_embeddings(glove_file):
     return embedding_dict
 
 
-def preprocess_wiki_dump():
-    # TODO: get only <page><text>
-    #   remove
-    #       stuff inside {{
-    #       stuff inside [[
-    #           deal with alternatives marked by | (use second)
-    return ""
-
-
 def read_text_data():
     # Reads ‘alice.txt’ file
     sample = open(file='data/alice_in_wonderland.txt', encoding="utf8")
@@ -59,7 +48,7 @@ def read_text_data():
 
 
 def preprocess_text_for_word_embedding_creation(s):
-    # TODO: do I also have to remove stopwords and special characters like here
+    # TODO: do I also have to remove stopwords and special characters like here?
     #   https://medium.com/analytics-vidhya/word-similarity-word2vec-natural-language-processing-fe085f9f03e7?
 
     # Replaces escape character with space
