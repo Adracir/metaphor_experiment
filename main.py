@@ -6,6 +6,7 @@ import random
 from nltk.tokenize import sent_tokenize, word_tokenize
 from nltk.tag import pos_tag_sents
 import numpy as np
+import corpora
 
 import warnings
 
@@ -122,17 +123,18 @@ def create_mean_vector_from_multiple(word_list, model):
 
 
 if __name__ == '__main__':
+    s = corpora.preprocess_wiki_dump()
     # s = read_text_data()
-    # data = preprocess_text(s)
-    # model = make_word_emb_model(data)
-    model = Word2Vec.load("word2vec.model")
+    data = preprocess_text_for_word_embedding_creation(s)
+    model = make_word_emb_model(data)
+    # model = Word2Vec.load("word2vec.model")
     # TODO: training needed for better results?
-    print("Cosine similarity between 'hatter' " +
-          "and 'alice' - CBOW : ",
-          model.wv.similarity("hatter_NOUN", "alice_NOUN"))
+    print("Cosine similarity between 'be' " +
+          "and 'is' - CBOW : ",
+          model.wv.similarity("be_VERB", "is_VERB"))
     # test create_mean_vector_from_multiple
-    word_list = ("hatter_NOUN", "alice_NOUN")
-    print(create_mean_vector_from_multiple(word_list, model))
+    # word_list = ("hatter_NOUN", "alice_NOUN")
+    # print(create_mean_vector_from_multiple(word_list, model))
     '''
     # prints first 10 entries from vocab
     word_key = ''
@@ -144,7 +146,7 @@ if __name__ == '__main__':
     print(f"word_key: {word_key}")
     vector = model.wv[word_key]
     print(f"vector by word_key {word_key}: {vector}")'''
-    # model.save("word2vec.model")
+    model.save("wiki_word2vec.model")
 
     '''
     # uses pre-trained glove embeddings to compare sets from csv list by cosine_similarity
