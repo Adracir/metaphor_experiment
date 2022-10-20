@@ -42,6 +42,7 @@ def load_pretrained_embeddings(glove_file):
     return embedding_dict
 
 
+# TODO: only for testing purposes, remove!
 def read_text_data():
     # Reads ‘alice.txt’ file
     sample = open(file='data/alice_in_wonderland.txt', encoding="utf8")
@@ -87,11 +88,10 @@ def make_word_emb_model(data):
     # TODO: try if skipgram or CBOW (here, default) work better!
     return gensim.models.Word2Vec(data, min_count=1, vector_size=100, window=5)
 
-# TODO: make word sets real word sets or rename to list? connected with PoS problem
 # TODO: maybe load two word sets by metaphor_id
-# TODO: maybe make metaphor_id array, so that one word set can belong to multiple metaphors (e.g. life)
 
 
+# TODO: structure of csv has changed, update
 def load_word_set_from_csv(word_set):
     """ function to read prepared word set from a csv of the following structure
         word, pos (part of speech), set (belonging to word set), metaphor_id (distinguishing the different metaphors
@@ -103,6 +103,7 @@ def load_word_set_from_csv(word_set):
     return df['word'].tolist()
 
 
+# TODO: maybe include weights predefined in word_sets.csv to stress especially useful words
 def create_mean_vector_from_multiple(word_list, model):
     """
     calculates the mean vector multiple words
