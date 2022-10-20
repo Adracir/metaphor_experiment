@@ -1,139 +1,134 @@
 import re
 from xml.etree import ElementTree as ET
-
-# TODO: preprocess Wikipedia
-#  (https://towardsdatascience.com/pre-processing-a-wikipedia-dump-for-nlp-model-training-a-write-up-3b9176fdf67)
+import time
 
 root = 'C:/Users/adrac/Documents/Uni/Embeddings/metaphor_experiment'
-# WIKI_DUMP = "/data/wiki/enwiki-latest-pages-articles-multistream.xml"
-WIKI_DUMP = "/data/wiki/small_test_wiki.xml"
+WIKI_DUMP = "/data/wiki/enwiki-latest-pages-articles-multistream.xml"
+WIKI_DUMP_SMALL = "/data/wiki/small_test_wiki.xml"
 namespaces = {'wiki_ns': 'http://www.mediawiki.org/xml/export-0.10/'}
 
 
-def preprocess_wiki_dump():
-    tree = ET.parse(root + WIKI_DUMP)
-    # get only <page><text>
-    text_elements = tree.findall('.//wiki_ns:page//wiki_ns:text', namespaces)
-    # TODO: find better method to parse text than to use ''.join(e.itertext())
-    # contains list of text structured by pages
-    text = [''.join(e.itertext()) for e in text_elements]
-
+# TODO: enable cleaning chunks and saving to differently named files, making it possible to stop and continue cleaning
+def preprocess_wiki_dump_timed_cached_test(begin_at, end_at):
+    """
+    cleans wikipedia text at a wanted chunk and saves cleaned text to txt file
+    :param begin_at: begins at this page (inclusive)
+    :param end_at: ends at this page (exclusive)
+    :return: cleaned text of the taken pages
+    """
     cleaned_texts = []
-    for p_text in text:
-        # TODO: think of sensible order of the different operations!
-        # ignores whole text of page if it starts with #REDIRECT (means, page only redirects to other page)
-        if not re.match('#REDIRECT', p_text):
-            # removes &quot; (quotation mark)
-            p_text = re.sub('&quot;', '', p_text)
-            # removes stuff inside <ref> and </ref> (some references)
-            p_text = re.sub('(<ref.*?>.*?</ref>|<ref.*?/>)', '', p_text)
-            # removes stuff inside {||} (tables)
-            p_text = re.sub('\{\|[\s\S]*?\|\}', '', p_text)  # TODO: generally replace .*? by [\s\S]*? ? would include newline chars
-            # removes stuff inside {{}}(references, meta)
-            p_text = re.sub('\{\{.*?\}\}', '', p_text)
-            # accepts content left over from nested brackets, but cleans up the brackets themselves
-            p_text = re.sub('\{\{|\}\}', '', p_text)
-            # p_text = remove_text_inside_brackets(p_text, brackets="{}")
-            # removes stuff inside <div> (html stylings) (also nested)
-            # TODO: necessary? if so, do it!
-            # removes '' (marks text as italic) and ''' (marks text as bold)
-            p_text = re.sub('(\'){2,3}', '', p_text)
-            # removes stuff inside [[Category: ]] (links to wiki categories)
-            p_text = re.sub('\[\[Category\:.*?\]\]', '', p_text)
-            # removes stuff inside [[File:]] including nested brackets (image metadata & image description)
-            # p_text = remove_text_inside_brackets(p_text, ["\[\[File:", "\]\]"], ["\[\[", "\]\]"])
-            # TODO: necessary? if so, do it!
-            # removes remaining [[ ]] (links to other wiki page)
-            # if two alternatives marked by |, use second (indicating visible text)
-            p_text = remove_square_brackets_choose_alternative(p_text)
-            cleaned_texts.append(p_text)
-    return "".join(cleaned_texts)
 
+    # counts found elements to see if some stuff is useless:
+    '''quotations = 0
+    tables = 0
+    references = 0
+    curved_brackets = 0
+    italic_bold_marks = 0
+    categories = 0
+    files = 0
+    square_brackets_content = 0
+    double_square_brackets = 0
+    table_leftovers = 0
+    links = 0
+    html_tags = 0
+    html_comments = 0
+    stars = 0'''
 
-# stuff will probably not be followed anymore, has no priority!
-# It is very complex to remove content from brackets including nested ones
-# TODO: improve code, also in loop-function?
-def remove_text_inside_brackets(text, brackets, innerbrackets=[]):
-    # for brackets containing of multiple characters, treated as regex
-    if len(innerbrackets) > 0: # TODO: better (also) check brackets[0].len > 1?
-        # split text at opening brackets
-        text_list = re.split(brackets[0], text)
-        print(f'text_list: {text_list}')
-        # add first element to groups (before first opening bracket)
-        groups = [text_list[0]]
-        text_list.remove(text_list[0])
-        # call function
-        loop_text_list(text_list, groups, innerbrackets)
-    else:
-        # TODO: takes too long!! maybe adapt other case! only that innerbrackets equal brackets here... that makes it a bit more difficult
-        groups = ['']
-        # iterates through text, character by character
-        for i in text:
-            # if character indicates opening bracket, add new item to group (list)
-            if i == brackets[0]:
-                groups.append(i)
-            # if character indicates closing bracket, and there is something contained in group,
-            # remove last item from group
-            elif i == brackets[1] and len(groups) > 1:
-                groups.pop()
-            # if it is any other character, add this to the last item of the group
-            else:
-                groups[-1] += i
-            print(groups)
-    # group string is returned
-    return "".join(groups)
-
-
-# TODO: improve code!
-def loop_text_list(text_list, groups, innerbrackets):
-    print(f'text_list: {text_list}, groups: {groups}')
-    # after first opening bracket, iterate text_list
-    for t in text_list:
-        # if next innerbracket is opening bracket, append element to group list
-        if (re.search(innerbrackets[0], t) and re.search(innerbrackets[1], t) and re.search(innerbrackets[0], t).regs[0][0] < re.search(innerbrackets[1], t).regs[0][0]) or (re.search(innerbrackets[0], t) and not re.search(innerbrackets[1], t)):
-            print(f'!!!opening bracket in t: {t}!!!')
-            inner_text_list = re.split(innerbrackets[0], t, 1)
-            # add first part before [[ to groups
-            groups.append(inner_text_list[0])
-            # replace t by remaining stuff from t and call loop recursively
-            text_list[0] = inner_text_list[1]
-            loop_text_list(text_list, groups, innerbrackets)
-        # if there is a match with another closing bracket, remove last element from group list
-        elif (re.search(innerbrackets[0], t) and re.search(innerbrackets[1], t) and re.search(innerbrackets[1], t).regs[0][0] < re.search(innerbrackets[0], t).regs[0][0]) or (re.search(innerbrackets[1], t) and not re.search(innerbrackets[0], t)):  # TODO: what if case groups only contains one element?
-            print(f'!!!closing bracket in t: {t}!!!')
-            # split at first occurrence of closing tag
-            inner_text_list = re.split(innerbrackets[1], t, 1)
-            # remove last content of group if it contains more than one
-            # add remaining part of t to last group item
-
-            # add remaining part of t to text_list if groups has still more than 1 element
-            if len(groups) > 1:
-                text_list[0] = inner_text_list[1]
-                groups.pop()
-            else:
-                text_list.remove(t)
-                groups[-1] += inner_text_list[1]
-            # recall function recursively
-            loop_text_list(text_list, groups, innerbrackets)
-        # else append text to last group list element
-        else:
-            groups[-1] += t
-            print(f'!!!t added: {t}!!!')
-        print(f'groups: {groups}')
-
-
-# TODO: improve code
-def remove_square_brackets_choose_alternative(text):
-    text = re.sub("(\[\[.*?\|)(.*?)(\]\])", repl, text)
-    text = re.sub("\[\[|\]\]", "", text)
-    return text
+    counter = 0
+    # parse tree and take only text elements
+    for event, elem in ET.iterparse(root + WIKI_DUMP, events=("start", "end")):
+        if event == "end":
+            if elem.tag == '{' + namespaces.get('wiki_ns') + '}text':
+                counter += 1
+                if counter < begin_at:
+                    print(f'skipped text {counter}')
+                elif begin_at <= counter < end_at:
+                    # TODO: maybe find better method to parse text than to use ''.join(p_text.itertext())
+                    # take only inner text
+                    p_text = ''.join(elem.itertext())
+                    # ignores whole page if it starts with #REDIRECT or {{wiktionary (only redirects to other pages)
+                    if not re.match('(#REDIRECT)|(\{\{wiktionary)', p_text):
+                        # removes &quot; (quotation mark)
+                        # quotations += len(re.findall("&quot;", p_text))
+                        p_text = re.sub('&quot;', '', p_text)
+                        # removes stuff inside {||} (tables)
+                        # tables += len(re.findall("\{\|[\s\S]*?\|\}", p_text))
+                        p_text = re.sub('\{\|[\s\S]*?\|\}', '', p_text)
+                        # removes stuff inside {{}}(references, meta)
+                        # references += len(re.findall('\{\{[\s\S]*?\}\}', p_text))
+                        p_text = re.sub('\{\{[\s\S]*?\}\}', '', p_text)
+                        # accepts content left over from nested brackets, but cleans up the brackets themselves
+                        # curved_brackets += len(re.findall('\{\{|\}\}', p_text))
+                        p_text = re.sub('\{\{|\}\}', '', p_text)
+                        # removes '' (marks text as italic) and ''' '''(marks text as bold)
+                        # italic_bold_marks += len(re.findall('(\'){2,3}', p_text))
+                        p_text = re.sub('(\'){2,3}', '', p_text)
+                        # removes stuff inside [[Category: ]] (links to wiki categories)
+                        # categories += len(re.findall('\[\[Category\:.*?\]\]', p_text))
+                        p_text = re.sub('\[\[Category\:.*?\]\]', '', p_text)
+                        # removes stuff inside [[File:]] (image metadata & image description)
+                        # files += len(re.findall('\[\[File:.*?\|+.*(\]\])+', p_text))
+                        p_text = re.sub('\[\[File:.*?\|+.*(\]\])+', '', p_text)
+                        # removes remaining square brackets and chooses what content to keep
+                        # square_brackets_content += len(re.findall("(\[\[.[^\[\]]*?\|)(.*?)(\]\])", p_text))
+                        p_text = re.sub("(\[\[.[^\[\]]*?\|)(.*?)(\]\])", repl, p_text)
+                        # clean up all [[ ]] that are left
+                        # double_square_brackets += len(re.findall("\[\[|\]\]", p_text))
+                        p_text = re.sub("\[\[|\]\]", "", p_text)
+                        # removes leftovers from tables
+                        # table_leftovers += len(re.findall('\|.[^ \n]*', p_text))
+                        p_text = re.sub('\|.[^ \n]*', '', p_text)
+                        # clean up also links in [ ]
+                        # links += len(re.findall('\[.*?\]', p_text))
+                        p_text = re.sub('\[.*?\]', '', p_text)
+                        # TODO: too complex? decomplexify? :D
+                        # removes remaining html tags and their content
+                        # html_tags += len(re.findall('(<\w+?.[^\/]*?>[\s\S]*?<\/\w+?>)|(<\w+?.*?\/>)', p_text))
+                        p_text = re.sub('(<\w+?.[^\/]*?>[\s\S]*?<\/\w+?>)|(<\w+?.*?\/>)', '', p_text)
+                        # removes html comments
+                        # html_comments += len(re.findall('<!--.*?-->', p_text))
+                        p_text = re.sub('<!--.*?-->', '', p_text)
+                        # removes stars
+                        # stars += len(re.findall('\*', p_text))
+                        p_text = re.sub('\*', '', p_text)
+                        # removes newlines
+                        p_text = re.sub('\n', ' ', p_text)
+                        cleaned_texts.append(p_text)
+                        print(f'text {counter} cleaned')
+                    else:
+                        print(f'text {counter} ignored')
+                else:
+                    print(f'stopped at text {counter}')
+                    break
+    # save cleaned text
+    file_name = f'cleaned_texts_from_{begin_at}_to_{end_at}.txt'
+    text_file = open(root + '/data/wiki/' + file_name, 'w', encoding="utf-8")
+    cleaned_text_string = "".join(cleaned_texts)
+    text_file.write(cleaned_text_string)
+    text_file.close()
+    print(f'saved {len(cleaned_texts)} cleaned texts to file {file_name}')
+    '''print(f'quotations = {quotations}')
+    print(f'tables = {tables}')
+    print(f'references = {references}')
+    print(f'curved_brackets = {curved_brackets}')
+    print(f'italic_bold_marks = {italic_bold_marks}')
+    print(f'categories = {categories}')
+    print(f'files = {files}')
+    print(f'square_brackets_content = {square_brackets_content}')
+    print(f'double_square_brackets = {double_square_brackets}')
+    print(f'table_leftovers = {table_leftovers}')
+    print(f'links = {links}')
+    print(f'html_tags = {html_tags}')
+    print(f'html_comments = {html_comments}')'''
+    return cleaned_text_string
 
 
 def repl(matchobj):
     return matchobj.group(2)
 
-# TODO:
-#   maybe also remove
-#       mathematical formulas
-#       [ ] (links, but contains also other info)
 
+start = time.time()
+preprocess_wiki_dump_timed_cached_test(begin_at=1, end_at=10000)
+end = time.time()
+print(f'time taken in seconds: {end - start}')
+# TODO: 7115 and following take especially long?

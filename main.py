@@ -50,17 +50,15 @@ def read_text_data():
 
 
 def preprocess_text_for_word_embedding_creation(s):
-    # TODO: do I also have to remove stopwords and special characters like here?
-    #   https://medium.com/analytics-vidhya/word-similarity-word2vec-natural-language-processing-fe085f9f03e7?
-
+    # TODO: remove this code snippet, should be done in preprocessing
     # Replaces escape character with space
-    f = s.replace("\n", " ")
+    # f = s.replace("\n", " ")
 
     text_data = []
 
     tokenized_sents = []
     # iterate through each sentence in the file
-    for i in sent_tokenize(f):
+    for i in sent_tokenize(s):
         temp = []
 
         # tokenize the sentence into words
