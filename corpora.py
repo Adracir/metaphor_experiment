@@ -13,9 +13,10 @@ def preprocess_wiki_dump_timed_cached_test(begin_at, end_at):
     """
     cleans wikipedia text at a wanted chunk and saves cleaned text to txt file
     :param begin_at: begins at this page (inclusive)
-    :param end_at: ends at this page (exclusive)
+    :param end_at: ends at this page (inclusive)
     :return: cleaned text of the taken pages
     """
+    start = time.time()
     cleaned_texts = []
 
     # counts found elements to see if some stuff is useless:
@@ -41,13 +42,15 @@ def preprocess_wiki_dump_timed_cached_test(begin_at, end_at):
             if elem.tag == '{' + namespaces.get('wiki_ns') + '}text':
                 counter += 1
                 if counter < begin_at:
-                    print(f'skipped text {counter}')
-                elif begin_at <= counter < end_at:
+                    pass
+                elif begin_at <= counter <= end_at:
+                    end = time.time()
+                    print(f'time taken before start: {end-start} seconds')
                     # TODO: maybe find better method to parse text than to use ''.join(p_text.itertext())
                     # take only inner text
                     p_text = ''.join(elem.itertext())
                     # ignores whole page if it starts with #REDIRECT or {{wiktionary (only redirects to other pages)
-                    if not re.match('(#REDIRECT)|(\{\{wiktionary)', p_text):
+                    if not re.match('(#REDIRECT)|(\{\{wiktionary)|(\[\[Wikipedia:Free_On-line_Dictionary_of_Computing/symbols)', p_text):
                         # removes &quot; (quotation mark)
                         # quotations += len(re.findall("&quot;", p_text))
                         p_text = re.sub('&quot;', '', p_text)
@@ -126,9 +129,9 @@ def preprocess_wiki_dump_timed_cached_test(begin_at, end_at):
 def repl(matchobj):
     return matchobj.group(2)
 
-
+# TODO: problem: the later you start, the more "foreplay" there is (e.g. 108s before 300000)
+# TODO: maybe make automated way of cleaning chunks of the (whole?) text
 start = time.time()
-preprocess_wiki_dump_timed_cached_test(begin_at=1, end_at=10000)
+preprocess_wiki_dump_timed_cached_test(begin_at=300001, end_at=400000)
 end = time.time()
 print(f'time taken in seconds: {end - start}')
-# TODO: 7115 and following take especially long?

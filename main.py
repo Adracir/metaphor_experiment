@@ -1,3 +1,5 @@
+import csv
+
 import nltk
 
 import weat
@@ -6,14 +8,14 @@ import random
 from nltk.tokenize import sent_tokenize, word_tokenize
 from nltk.tag import pos_tag_sents
 import numpy as np
-import corpora
+# import corpora
 
 import warnings
 
 warnings.filterwarnings(action='ignore')
 
 import gensim
-from gensim.models import Word2Vec
+from gensim.models import Word2Vec, KeyedVectors
 
 WORD_DOMAIN_SETS_FILE = "word_sets.csv"
 
@@ -101,8 +103,16 @@ def load_word_set_from_csv(word_set):
     return df['word'].tolist()
 
 
+def load_word_set_from_csv_by_metaphor_id(df, metaphor_id, pos=''):
+    df = df[(df['metaphor_id'].str.contains(metaphor_id)) | (df['metaphor_id'] == metaphor_id)]
+    # TODO: include pos
+    word_set = df['word_pos'].tolist()
+    print(f'word_set for metaphor_id {metaphor_id}: {word_set}')
+    return word_set
+
+
 # TODO: maybe include weights predefined in word_sets.csv to stress especially useful words
-def create_mean_vector_from_multiple(word_list, model):
+def create_mean_vector_from_multiple(word_list, model=None):
     """
     calculates the mean vector multiple words
     :param word_list: list of words, in the preprocessed form (pos-tagged with "word"_"tag", can be obtained using
@@ -113,7 +123,7 @@ def create_mean_vector_from_multiple(word_list, model):
     """
     # TODO: check again if any pre-defined method from word2vec might be used
     # get vectors for words
-    word_vecs = [model.wv[word] for word in word_list]
+    word_vecs = vectorize_word_list(word_list, model)
     # combine word_vecs1,2,3... to np.array a [[num1, num2, num3...],[num1, num2, num3], ...]
     a = np.column_stack([word_vec for word_vec in word_vecs])
     # calculate mean vector
@@ -121,19 +131,102 @@ def create_mean_vector_from_multiple(word_list, model):
     return vec
 
 
+def vectorize_word_list(word_list, model):
+    if type(model) == KeyedVectors:
+        word_vecs = [model[word.split('_')[0]] for word in word_list]
+    elif model:  # model is Word2vec
+        word_vecs = [model.wv[word] for word in word_list]
+    else:
+        word_vecs = word_list
+    return word_vecs
+
+
+def create_random_word_vector_sets(num, model, len):
+    vector_sets = []
+    for n in range(num):
+        temp = []
+        for l in range(len):
+            if type(model) == KeyedVectors:
+                temp.append(model[random.choice(model.index_to_key)])
+            else:
+                temp.append(model.wv[random.choice(model.wv.index_to_key)])
+        vector_sets.append(temp)
+    return vector_sets
+
+
+# method compare_each gives extremely low values, but still better than baseline
+def execute_experiment(model, method, pos=''):
+    # read data from word sets input csv
+    df = pd.read_csv(WORD_DOMAIN_SETS_FILE)
+
+    # prepare output csv file
+    # TODO: improve naming, depending on used model
+    output_file_path = f'results/googlenews_{method}_results.csv'
+    with open(output_file_path, mode='w', newline='') as output_file:
+        writer = csv.writer(output_file, delimiter=',')
+        writer.writerow(['metaphor', 'pos', 'similarity', 'baseline_performance'])
+
+    # TODO: more general, maybe implement
+    # get all different metaphor ids
+    # metaphor_ids = set(df['metaphor_id'].values)
+    # clean up metaphor ids that contain multiple metaphors
+    # sort list
+
+    # TODO: implicates knowledge about content of csv, maybe improve (see above)
+    #   include more if there is more
+    # iterate all metaphors
+    for i in range(1, 8):
+        # TODO: include other iterations with different word forms (pos)
+        # load 2 word sets for metaphor
+        metaphor_ids = [f'{i}_1', f'{i}_2']
+        word_set1 = load_word_set_from_csv_by_metaphor_id(df, metaphor_ids[0], pos)
+        word_set2 = load_word_set_from_csv_by_metaphor_id(df, metaphor_ids[1], pos)
+
+        # TODO: improve embeddings, many words give keyerror at the moment
+        # TODO: also improve error handling
+        # calculate similarity between both sets, depending on chosen method
+        if method == "mean_vector":
+            mean_vec1 = create_mean_vector_from_multiple(word_set1, model)
+            mean_vec2 = create_mean_vector_from_multiple(word_set2, model)
+            similarity = weat.cosine_similarity(mean_vec1, mean_vec2)
+        elif method == "compare_each":
+            word_vecs1 = vectorize_word_list(word_set1, model)
+            word_vecs2 = vectorize_word_list(word_set2, model)
+            similarity = weat.set_s(word_vecs1, word_vecs2)
+
+        # initiate 100 random word vector sets
+        random_vector_sets = create_random_word_vector_sets(100, model, len(word_set1))
+        # calculate random baseline similarity, depending on chosen method
+        random_similarity_sum = 0
+        if method == 'mean_vector':
+            # TODO: maybe improve way of getting mean random similarity
+            for random_vecs in random_vector_sets:
+                random_mean_vec = create_mean_vector_from_multiple(random_vecs)
+                random_similarity_sum += weat.cosine_similarity(mean_vec1, random_mean_vec)
+        elif method == "compare_each":
+            for random_vecs in random_vector_sets:
+                random_similarity_sum += weat.set_s(word_vecs1, random_vecs)
+        random_similarity = random_similarity_sum / len(random_vector_sets)
+
+        # write results to csv file
+        with open(output_file_path, mode='a', newline='') as output_file:
+            writer = csv.writer(output_file, delimiter=',')
+            pos_string = "all" if pos == '' else pos
+            writer.writerow([i, pos_string, similarity, random_similarity])
+    return ''  # TODO: return nothing at all?
+
+
 if __name__ == '__main__':
-    s = corpora.preprocess_wiki_dump()
+    # s = corpora.preprocess_wiki_dump()
     # s = read_text_data()
-    data = preprocess_text_for_word_embedding_creation(s)
-    model = make_word_emb_model(data)
-    # model = Word2Vec.load("word2vec.model")
-    # TODO: training needed for better results?
-    print("Cosine similarity between 'be' " +
-          "and 'is' - CBOW : ",
-          model.wv.similarity("be_VERB", "is_VERB"))
-    # test create_mean_vector_from_multiple
-    # word_list = ("hatter_NOUN", "alice_NOUN")
-    # print(create_mean_vector_from_multiple(word_list, model))
+    # data = preprocess_text_for_word_embedding_creation(s)
+    # model = make_word_emb_model(data)
+    model = KeyedVectors.load_word2vec_format('models/GoogleNews-vectors-negative300.bin', binary=True)    # TODO: training needed for better results?
+    # print("Cosine similarity between 'be' " +
+          # "and 'is' - CBOW : ",
+          # model.wv.similarity("be_VERB", "is_VERB"))
+    execute_experiment(model, 'compare_each')
+
     '''
     # prints first 10 entries from vocab
     word_key = ''
@@ -145,41 +238,7 @@ if __name__ == '__main__':
     print(f"word_key: {word_key}")
     vector = model.wv[word_key]
     print(f"vector by word_key {word_key}: {vector}")'''
-    model.save("wiki_word2vec.model")
-
-    '''
-    # uses pre-trained glove embeddings to compare sets from csv list by cosine_similarity
-    # importance_set = load_word_set_from_csv("importance")
-    # size_set = load_word_set_from_csv("size")
-    active_set = load_word_set_from_csv("active")
-    life_set = load_word_set_from_csv("life")
-    # get dictionary of word --> embedding from glove file
-    emb_dict = load_pretrained_embeddings('glove.6B.50d.txt')
-    A = [emb_dict[x] for x in active_set]
-    B = [emb_dict[x] for x in life_set]
-    baseline_set = [random.choice(list(emb_dict.values())) for x in life_set]
-    print('similarity importance and size: {}'.format(weat.set_s(A, B)))
-    print('baseline similarity, importance and random: {}'.format(weat.set_s(A, baseline_set)))
-    '''
-    # TODO: improve baseline, use sets that are similarly homogenous to the source sets?
-    """
-    # up is good, bad is down
-    X_list = ['raise', 'rise', 'lift', 'climb', 'mount', 'reach', 'surge', 'elevate', 'height', 'top', 'mountain',
-              'elevation', 'raise', 'ascent', 'peak', 'summit', 'tip', 'high', 'tall', 'top', 'upper', 'large',
-              'rising',
-              'elevated', 'raised', 'upward', 'ascending', 'up', 'above']
-    Y_list = ['drop', 'fall', 'sink', 'decline', 'decrease', 'descend', 'slip', 'lower', 'floor', 'decline', 'descent',
-              'bottom', 'ground', 'sinking', 'slope', 'underside', 'low', 'down', 'downward', 'descending', 'sliding',
-              'below', 'bottom', 'declining', 'down', 'under', 'underneath']
-    # attribute words
-    A_list = ['care', 'help', 'donate', 'cheer', 'improve', 'heal', 'better', 'purify', 'right', 'reason',
-              'charity', 'humanity', 'welfare', 'kindness', 'virtue', 'decency', 'quality', 'improvement', 'good',
-              'better', 'able', 'whole', 'fine', 'healthy', 'moral', 'whole', 'fair', 'excellent', 'great',
-              'favorable', 'wonderful', 'nice']
-    B_list = ['lose', 'fail', 'suffer', 'impair', 'worsen', 'aggravate', 'deteriorate', 'sicken', 'fault', 'error',
-              'evil', 'damage', 'harm', 'badness', 'bad', 'deterioration', 'bad', 'sad', 'dangerous', 'terrible',
-              'sick', 'difficult', 'serious', 'unfortunate', 'painful', 'cruel', 'evil']
-    """
+    # model.save("wiki_word2vec.model")
 
     # TODO: visualize results!
     #   maybe similarity inside of sets (similarity matrix?)

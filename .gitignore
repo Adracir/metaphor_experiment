@@ -1,7 +1,5 @@
 .idea
 __pycache__
-glove.6b
-glove.6B.50d.txt
 data
-word2vec.model
-wiki_word2vec.model
+models
+results
