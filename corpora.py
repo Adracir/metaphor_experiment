@@ -49,6 +49,15 @@ def preprocess_wiki_dump_timed_cached_test(begin_at, end_at):
                     # TODO: maybe find better method to parse text than to use ''.join(p_text.itertext())
                     # take only inner text
                     p_text = ''.join(elem.itertext())
+                    # writes uncleaned text to file, needed for analysis of long-cleaning texts
+                    # uncleaned_file = open(f'{root}/data/wiki/uncleaned_{counter}.txt', 'w', encoding='utf-8')
+                    # uncleaned_file.write((p_text))
+                    # uncleaned_file.close()
+
+
+                    # TODO: maybe exclude texts starting with {{Commons cat
+                    #  as they seem to take long to process... but may contain also useful content :/
+                    #   or maybe skip some known long cleaning texts by counter, e.g. 527114
                     # ignores whole page if it starts with #REDIRECT or {{wiktionary (only redirects to other pages)
                     if not re.match('(#REDIRECT)|(\{\{wiktionary)|(\[\[Wikipedia:Free_On-line_Dictionary_of_Computing/symbols)', p_text):
                         # removes &quot; (quotation mark)
@@ -132,6 +141,6 @@ def repl(matchobj):
 # TODO: problem: the later you start, the more "foreplay" there is (e.g. 108s before 300000)
 # TODO: maybe make automated way of cleaning chunks of the (whole?) text
 start = time.time()
-preprocess_wiki_dump_timed_cached_test(begin_at=300001, end_at=400000)
+preprocess_wiki_dump_timed_cached_test(begin_at=527114, end_at=527114)
 end = time.time()
 print(f'time taken in seconds: {end - start}')

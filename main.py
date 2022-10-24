@@ -154,6 +154,9 @@ def create_random_word_vector_sets(num, model, len):
     return vector_sets
 
 
+# TODO: include more similarity measures, e.g. canberra (https://www.statology.org/canberra-distance-python/)
+#  , manhattan (https://www.statology.org/manhattan-distance-python/)
+#   , maybe euclidian (https://www.statology.org/euclidean-distance-python/
 # method compare_each gives extremely low values, but still better than baseline
 def execute_experiment(model, method, pos=''):
     # read data from word sets input csv
@@ -166,7 +169,7 @@ def execute_experiment(model, method, pos=''):
         writer = csv.writer(output_file, delimiter=',')
         writer.writerow(['metaphor', 'pos', 'similarity', 'baseline_performance'])
 
-    # TODO: more general, maybe implement
+    # TODO: more general, takes all info from csv file, maybe implement
     # get all different metaphor ids
     # metaphor_ids = set(df['metaphor_id'].values)
     # clean up metaphor ids that contain multiple metaphors
@@ -175,13 +178,17 @@ def execute_experiment(model, method, pos=''):
     # TODO: implicates knowledge about content of csv, maybe improve (see above)
     #   include more if there is more
     # iterate all metaphors
-    for i in range(1, 8):
+    for i in range(1, 12):
         # TODO: include other iterations with different word forms (pos)
         # load 2 word sets for metaphor
         metaphor_ids = [f'{i}_1', f'{i}_2']
         word_set1 = load_word_set_from_csv_by_metaphor_id(df, metaphor_ids[0], pos)
         word_set2 = load_word_set_from_csv_by_metaphor_id(df, metaphor_ids[1], pos)
-
+        similarity = 0
+        # initiate 100 random word vector sets
+        random_vector_sets = create_random_word_vector_sets(100, model, len(word_set1))
+        # calculate random baseline similarity, depending on chosen method
+        random_similarity_sum = 0
         # TODO: improve embeddings, many words give keyerror at the moment
         # TODO: also improve error handling
         # calculate similarity between both sets, depending on chosen method
@@ -189,23 +196,17 @@ def execute_experiment(model, method, pos=''):
             mean_vec1 = create_mean_vector_from_multiple(word_set1, model)
             mean_vec2 = create_mean_vector_from_multiple(word_set2, model)
             similarity = weat.cosine_similarity(mean_vec1, mean_vec2)
-        elif method == "compare_each":
-            word_vecs1 = vectorize_word_list(word_set1, model)
-            word_vecs2 = vectorize_word_list(word_set2, model)
-            similarity = weat.set_s(word_vecs1, word_vecs2)
-
-        # initiate 100 random word vector sets
-        random_vector_sets = create_random_word_vector_sets(100, model, len(word_set1))
-        # calculate random baseline similarity, depending on chosen method
-        random_similarity_sum = 0
-        if method == 'mean_vector':
             # TODO: maybe improve way of getting mean random similarity
             for random_vecs in random_vector_sets:
                 random_mean_vec = create_mean_vector_from_multiple(random_vecs)
                 random_similarity_sum += weat.cosine_similarity(mean_vec1, random_mean_vec)
         elif method == "compare_each":
+            word_vecs1 = vectorize_word_list(word_set1, model)
+            word_vecs2 = vectorize_word_list(word_set2, model)
+            similarity = weat.set_s(word_vecs1, word_vecs2)
             for random_vecs in random_vector_sets:
                 random_similarity_sum += weat.set_s(word_vecs1, random_vecs)
+
         random_similarity = random_similarity_sum / len(random_vector_sets)
 
         # write results to csv file
