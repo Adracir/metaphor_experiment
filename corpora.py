@@ -42,7 +42,7 @@ def preprocess_wiki_dump_timed_cached_test(begin_at, end_at):
             if elem.tag == '{' + namespaces.get('wiki_ns') + '}text':
                 counter += 1
                 if counter < begin_at:
-                    pass
+                    continue
                 elif begin_at <= counter <= end_at:
                     end = time.time()
                     print(f'time taken before start: {end-start} seconds')
@@ -93,6 +93,8 @@ def preprocess_wiki_dump_timed_cached_test(begin_at, end_at):
                         # clean up also links in [ ]
                         # links += len(re.findall('\[.*?\]', p_text))
                         p_text = re.sub('\[.*?\]', '', p_text)
+                        # br-tags (makes next step less complex, especially for long lists
+                        p_text = re.sub('<br>', ' ', p_text)
                         # TODO: too complex? decomplexify? :D
                         # removes remaining html tags and their content
                         # html_tags += len(re.findall('(<\w+?.[^\/]*?>[\s\S]*?<\/\w+?>)|(<\w+?.*?\/>)', p_text))
@@ -141,6 +143,6 @@ def repl(matchobj):
 # TODO: problem: the later you start, the more "foreplay" there is (e.g. 108s before 300000)
 # TODO: maybe make automated way of cleaning chunks of the (whole?) text
 start = time.time()
-preprocess_wiki_dump_timed_cached_test(begin_at=527114, end_at=527114)
+preprocess_wiki_dump_timed_cached_test(begin_at=500001, end_at=600000)
 end = time.time()
 print(f'time taken in seconds: {end - start}')
