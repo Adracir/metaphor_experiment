@@ -1,4 +1,4 @@
-word_pos,set,metaphor_id, weight
+word_pos,domain,metaphor_id, weight
 dominate_VERB,importance,1_1,1
 prevail_VERB,importance,1_1,1
 predominate_VERB,importance,1_1,1

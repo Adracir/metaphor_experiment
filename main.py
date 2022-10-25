@@ -88,26 +88,15 @@ def make_word_emb_model(data):
     # TODO: try if skipgram or CBOW (here, default) work better!
     return gensim.models.Word2Vec(data, min_count=1, vector_size=100, window=5)
 
-# TODO: maybe load two word sets by metaphor_id
 
-
-# TODO: structure of csv has changed, update
-def load_word_set_from_csv(word_set):
-    """ function to read prepared word set from a csv of the following structure
-        word, pos (part of speech), set (belonging to word set), metaphor_id (distinguishing the different metaphors
-        that consist of a target and source domain word set each)
-            :param word_set:     the set to which the words belong
-    """
-    df = pd.read_csv(WORD_DOMAIN_SETS_FILE)
-    df = df[df['set'] == word_set]
-    return df['word'].tolist()
-
-
-def load_word_set_from_csv_by_metaphor_id(df, metaphor_id, pos=''):
+# TODO: include weights?
+def load_word_set_from_csv_by_metaphor_id(df, metaphor_id, pos):
     df = df[(df['metaphor_id'].str.contains(metaphor_id)) | (df['metaphor_id'] == metaphor_id)]
-    # TODO: include pos
     word_set = df['word_pos'].tolist()
-    print(f'word_set for metaphor_id {metaphor_id}: {word_set}')
+    if not pos == '':
+        filtered = filter(lambda word: pos in word, word_set)
+        word_set = list(filtered)
+    print(f'word_set for metaphor_id {metaphor_id} and pos {pos}: {word_set}')
     return word_set
 
 
@@ -154,67 +143,67 @@ def create_random_word_vector_sets(num, model, len):
     return vector_sets
 
 
-# TODO: include more similarity measures, e.g. canberra (https://www.statology.org/canberra-distance-python/)
-#  , manhattan (https://www.statology.org/manhattan-distance-python/)
-#   , maybe euclidian (https://www.statology.org/euclidean-distance-python/
 # method compare_each gives extremely low values, but still better than baseline
-def execute_experiment(model, method, pos=''):
+def execute_experiment(model, method, similarity_measure, pos_tags=['']):
     # read data from word sets input csv
     df = pd.read_csv(WORD_DOMAIN_SETS_FILE)
 
     # prepare output csv file
     # TODO: improve naming, depending on used model
-    output_file_path = f'results/googlenews_{method}_results.csv'
+    output_file_path = f'results/googlenews_{method}_{similarity_measure}_{"_".join(pos_tags)}results.csv'
     with open(output_file_path, mode='w', newline='') as output_file:
         writer = csv.writer(output_file, delimiter=',')
-        writer.writerow(['metaphor', 'pos', 'similarity', 'baseline_performance'])
+        # TODO: include metaphor-name
+        writer.writerow(['metaphor-id', 'metaphor-name', 'pos', 'similarity', 'baseline_performance'])
 
     # TODO: more general, takes all info from csv file, maybe implement
     # get all different metaphor ids
     # metaphor_ids = set(df['metaphor_id'].values)
     # clean up metaphor ids that contain multiple metaphors
     # sort list
+    # iterate all pos-tags given for experiment
+    for pos in pos_tags:
+        # TODO: implicates knowledge about content of csv, maybe improve (see above)
+        # iterate all metaphors
+        for i in range(1, 12):
+            # TODO: include other iterations with different word forms (pos)
+            # load 2 word sets for metaphor
+            metaphor_ids = [f'{i}_1', f'{i}_2']
+            word_set1 = load_word_set_from_csv_by_metaphor_id(df, metaphor_ids[0], pos)
+            word_set2 = load_word_set_from_csv_by_metaphor_id(df, metaphor_ids[1], pos)
+            df1 = df[(df['metaphor_id'].str.contains(metaphor_ids[0])) | (df['metaphor_id'] == metaphor_ids[0])]
+            df2 = df[(df['metaphor_id'].str.contains(metaphor_ids[1])) | (df['metaphor_id'] == metaphor_ids[1])]
+            metaphor_name = f'{df1["domain"].tolist()[0]} is {df2["domain"].tolist()[0]}'
+            similarity = 0
+            # initiate 100 random word vector sets
+            random_vector_sets = create_random_word_vector_sets(100, model, len(word_set1))
+            # calculate random baseline similarity, depending on chosen method
+            random_similarity_sum = 0
+            # TODO: improve embeddings, many words give keyerror at the moment
+            # TODO: also improve error handling
+            # calculate similarity between both sets, depending on chosen method
+            if method == "mean_vector":
+                mean_vec1 = create_mean_vector_from_multiple(word_set1, model)
+                mean_vec2 = create_mean_vector_from_multiple(word_set2, model)
+                similarity = weat.similarity(mean_vec1, mean_vec2, similarity_measure)
+                # TODO: maybe improve way of getting mean random similarity
+                for random_vecs in random_vector_sets:
+                    random_mean_vec = create_mean_vector_from_multiple(random_vecs)
+                    random_similarity_sum += weat.similarity(mean_vec1, random_mean_vec, similarity_measure)
+            elif method == "compare_each":
+                word_vecs1 = vectorize_word_list(word_set1, model)
+                word_vecs2 = vectorize_word_list(word_set2, model)
+                similarity = weat.set_s(word_vecs1, word_vecs2, similarity_measure)
+                for random_vecs in random_vector_sets:
+                    random_similarity_sum += weat.set_s(word_vecs1, random_vecs, similarity_measure)
 
-    # TODO: implicates knowledge about content of csv, maybe improve (see above)
-    #   include more if there is more
-    # iterate all metaphors
-    for i in range(1, 12):
-        # TODO: include other iterations with different word forms (pos)
-        # load 2 word sets for metaphor
-        metaphor_ids = [f'{i}_1', f'{i}_2']
-        word_set1 = load_word_set_from_csv_by_metaphor_id(df, metaphor_ids[0], pos)
-        word_set2 = load_word_set_from_csv_by_metaphor_id(df, metaphor_ids[1], pos)
-        similarity = 0
-        # initiate 100 random word vector sets
-        random_vector_sets = create_random_word_vector_sets(100, model, len(word_set1))
-        # calculate random baseline similarity, depending on chosen method
-        random_similarity_sum = 0
-        # TODO: improve embeddings, many words give keyerror at the moment
-        # TODO: also improve error handling
-        # calculate similarity between both sets, depending on chosen method
-        if method == "mean_vector":
-            mean_vec1 = create_mean_vector_from_multiple(word_set1, model)
-            mean_vec2 = create_mean_vector_from_multiple(word_set2, model)
-            similarity = weat.cosine_similarity(mean_vec1, mean_vec2)
-            # TODO: maybe improve way of getting mean random similarity
-            for random_vecs in random_vector_sets:
-                random_mean_vec = create_mean_vector_from_multiple(random_vecs)
-                random_similarity_sum += weat.cosine_similarity(mean_vec1, random_mean_vec)
-        elif method == "compare_each":
-            word_vecs1 = vectorize_word_list(word_set1, model)
-            word_vecs2 = vectorize_word_list(word_set2, model)
-            similarity = weat.set_s(word_vecs1, word_vecs2)
-            for random_vecs in random_vector_sets:
-                random_similarity_sum += weat.set_s(word_vecs1, random_vecs)
+            random_similarity = random_similarity_sum / len(random_vector_sets)
 
-        random_similarity = random_similarity_sum / len(random_vector_sets)
-
-        # write results to csv file
-        with open(output_file_path, mode='a', newline='') as output_file:
-            writer = csv.writer(output_file, delimiter=',')
-            pos_string = "all" if pos == '' else pos
-            writer.writerow([i, pos_string, similarity, random_similarity])
-    return ''  # TODO: return nothing at all?
+            # write results to csv file
+            with open(output_file_path, mode='a', newline='') as output_file:
+                writer = csv.writer(output_file, delimiter=',')
+                pos_string = "all" if pos == '' else pos
+                writer.writerow([i, metaphor_name, pos_string, similarity, random_similarity])
 
 
 if __name__ == '__main__':
@@ -226,7 +215,7 @@ if __name__ == '__main__':
     # print("Cosine similarity between 'be' " +
           # "and 'is' - CBOW : ",
           # model.wv.similarity("be_VERB", "is_VERB"))
-    execute_experiment(model, 'compare_each')
+    execute_experiment(model, 'compare_each', similarity_measure='manhattan')
 
     '''
     # prints first 10 entries from vocab
