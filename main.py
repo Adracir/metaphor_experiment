@@ -1,14 +1,13 @@
 import csv
 
-import nltk
-
 import weat
 import pandas as pd
 import random
 from nltk.tokenize import sent_tokenize, word_tokenize
-from nltk.tag import pos_tag_sents
+from nltk.tag import pos_tag_sents, pos_tag
 import numpy as np
 # import corpora
+import time
 
 import warnings
 
@@ -16,6 +15,7 @@ warnings.filterwarnings(action='ignore')
 
 import gensim
 from gensim.models import Word2Vec, KeyedVectors
+import gensim.utils as gu
 
 WORD_DOMAIN_SETS_FILE = "word_sets.csv"
 
@@ -30,62 +30,27 @@ WORD_DOMAIN_SETS_FILE = "word_sets.csv"
 #  https://realpython.com/documenting-python-code/#documenting-your-python-code-base-using-docstrings
 
 
-def load_pretrained_embeddings(glove_file):
-    """ function to read in pretrained embedding vectors from a 6b glove file
-        :param glove_file:      the path to the glove file (vocabulary of 400k words)
-    """
-    embedding_dict = dict()
-    with open(glove_file, 'r', encoding='utf-8') as f:
-        for line in f:
-            row = line.strip().split(' ')
-            word = row[0]  # get word
-            vector = [float(i) for i in row[1:]]  # get vector
-            embedding_dict[word] = vector
-    return embedding_dict
-
-
-# TODO: only for testing purposes, remove!
-def read_text_data():
+def read_text_data(file):
     # Reads ‘alice.txt’ file
-    sample = open(file='data/alice_in_wonderland.txt', encoding="utf8")
+    sample = open(file, encoding="utf8")
     return sample.read()
 
 
 def preprocess_text_for_word_embedding_creation(s):
-    # TODO: remove this code snippet, should be done in preprocessing
-    # Replaces escape character with space
-    # f = s.replace("\n", " ")
-
     text_data = []
-
-    tokenized_sents = []
-    # iterate through each sentence in the file
-    for i in sent_tokenize(s):
-        temp = []
-
-        # tokenize the sentence into words
-        for j in word_tokenize(i):
-            temp.append(j.lower())
-
-        tokenized_sents.append(temp)
-    # TODO: improve code here! (but it seems, second for-loop cannot be avoided)
-    #   maybe just make one-liners from for-loops
-    #   maybe compare performance of two versions
-    # tag the sentences with the universal tagset. pos_tag_sents has improved performance in confront to pos_tag
-    pos_tagged = pos_tag_sents(sentences=tokenized_sents, tagset="universal", lang="eng")
-
-    # connect tag and word to string to simplify usage in later trained model
-    for sent in pos_tagged:
-        tag_connected_sent = []
-        for t in sent:
-            tag_connected_sent.append(t[0] + "_" + t[1])
-            # TODO: is this method sensible? It for sure solves the KeyError-problem!
-        text_data.append(tag_connected_sent)
+    tokenized = []
+    sents = sent_tokenize(s)
+    for sent in sents:
+        tokenized.append(gu.simple_preprocess(sent))
+    tagged = pos_tag_sents(tokenized, tagset='universal', lang='eng')
+    # TODO: is this method sensible? It for sure solves the KeyError-problem!
+    [text_data.append([t[0] + "_" + t[1] for t in sent]) for sent in tagged]
     return text_data
 
 
 def make_word_emb_model(data):
     # TODO: try if skipgram or CBOW (here, default) work better!
+    # TODO: play around with different settings!
     return gensim.models.Word2Vec(data, min_count=1, vector_size=100, window=5)
 
 
