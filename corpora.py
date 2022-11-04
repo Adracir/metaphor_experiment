@@ -143,6 +143,6 @@ def repl(matchobj):
 # TODO: problem: the later you start, the more "foreplay" there is (e.g. 108s before 300000)
 # TODO: maybe make automated way of cleaning chunks of the (whole?) text
 start = time.time()
-preprocess_wiki_dump_timed_cached_test(begin_at=500001, end_at=600000)
+preprocess_wiki_dump_timed_cached_test(begin_at=1, end_at=3000)
 end = time.time()
 print(f'time taken in seconds: {end - start}')

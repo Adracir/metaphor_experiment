@@ -6,17 +6,20 @@ import random
 from nltk.tokenize import sent_tokenize, word_tokenize
 from nltk.tag import pos_tag_sents, pos_tag
 import numpy as np
-from scipy.stats.stats import pearsonr
+from scipy.stats import pearsonr
 # import corpora
 import time
-
 import warnings
-
-warnings.filterwarnings(action='ignore')
-
 import gensim
 from gensim.models import Word2Vec, KeyedVectors
 import gensim.utils as gu
+import os
+
+warnings.filterwarnings(action='ignore')
+
+# ignores tensorflow warnings and infos
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
+
 
 WORD_DOMAIN_SETS_FILE = "word_sets.csv"
 
@@ -31,22 +34,30 @@ WORD_DOMAIN_SETS_FILE = "word_sets.csv"
 #  https://realpython.com/documenting-python-code/#documenting-your-python-code-base-using-docstrings
 
 
+# TODO: still needed?
 def read_text_data(file):
-    # Reads ‘alice.txt’ file
     sample = open(file, encoding="utf8")
     return sample.read()
 
 
-def preprocess_text_for_word_embedding_creation(s):
-    text_data = []
-    tokenized = []
-    sents = sent_tokenize(s)
-    for sent in sents:
-        tokenized.append(gu.simple_preprocess(sent))
-    tagged = pos_tag_sents(tokenized, tagset='universal', lang='eng')
-    # TODO: is this method sensible? It for sure solves the KeyError-problem!
-    [text_data.append([t[0] + "_" + t[1] for t in sent]) for sent in tagged]
-    return text_data
+def preprocess_text_for_word_embedding_creation(filename):
+    with open(filename, encoding='utf8') as file:
+        s = file.read()
+        text_data = []
+        tokenized = []
+        print('starting to sent_tokenize')
+        # takes a long time in nltk 3.7, that's why I downgraded to nltk 3.6.5 until upgrade is coming
+        # https://github.com/nltk/nltk/issues/3013
+        sents = sent_tokenize(s)
+        print('starting to simple_preprocess')
+        for sent in sents:
+            tokenized.append(gu.simple_preprocess(sent))
+        print('starting to pos-tag')
+        tagged = pos_tag_sents(tokenized, tagset='universal', lang='eng')
+        # TODO: is this method sensible? It for sure solves the KeyError-problem!
+        print('formatting pos-tags')
+        [text_data.append([t[0] + "_" + t[1] for t in sent]) for sent in tagged]
+        return text_data
 
 
 def make_word_emb_model(data):
@@ -109,6 +120,7 @@ def create_random_word_vector_sets(num, model, len):
     return vector_sets
 
 
+# TODO: test!
 # TODO: evaluate embeddings using human relatedness stuff and correlation:
 #   To test if this correlation is statistically significant, we can calculate the p-value
 #   associated with the Pearson correlation coefficient by using the Scipy pearsonr() function,
@@ -125,12 +137,21 @@ def create_random_word_vector_sets(num, model, len):
 #   Rubenstein, H., & Goodenough, J. (1965). Contextual correlates of synonymy. Commun. ACM, 8, 627–633.
 #   https://doi.org/10.1145/365628.365657
 def evaluate_embeddings(model):
-    gold_standard_relatedness = []
+    df = pd.read_csv('data/human_relatedness.csv')
+    gold_standard_relatedness = [float(x) for x in df['synonymy'].tolist()]
+    words1 = df['word1'].tolist()
+    words2 = df['word2'].tolist()
     embedding_relatedness = []
-    # TODO: read human_relatedness.csv
-    #   for each row:
-    #       get synonymy value and store in gold_standard_relatedness
-    #       calculate similarity of both words (with '_NOUN' added) with given model and store in embedding_relatedness
+    for i in range(0, len(words1)):
+        if type(model) == Word2Vec:
+            vec_word1 = model.wv[words1[i] + '_NOUN']
+            vec_word2 = model.wv[words2[i] + '_NOUN']
+        elif type(model) == KeyedVectors:
+            vec_word1 = model[words1[i]]
+            vec_word2 = model[words2[i]]
+        else:
+            break
+        embedding_relatedness.append(weat.similarity(vec_word1, vec_word2, 'cosine'))
     print(pearsonr(gold_standard_relatedness, embedding_relatedness))
 
 
@@ -197,14 +218,16 @@ def execute_experiment(model, method, similarity_measure, pos_tags=['']):
 
 if __name__ == '__main__':
     # s = corpora.preprocess_wiki_dump()
-    s = read_text_data('data/wiki/cleaned_texts_from_1_to_10000.txt')
-    start = time.time()
+    # s = read_text_data('data/wiki/cleaned_texts_from_1_to_10000.txt')
+    # start = time.time()
     # print(f'text read in {time.time() - start} seconds')
-    data = preprocess_text_for_word_embedding_creation(s)
-    end = time.time()
-    print(f'time taken in seconds, old method: {end - start}')
-    model = make_word_emb_model(data)
+    # data = preprocess_text_for_word_embedding_creation('data/wiki/cleaned_texts_from_1_to_3000.txt')
+    # end = time.time()
+    # print(f'preprocessing finished, time taken in secs: {end - start}')
+    # model = make_word_emb_model(data)
     # model = KeyedVectors.load_word2vec_format('models/GoogleNews-vectors-negative300.bin', binary=True)    # TODO: training needed for better results?
+    model = Word2Vec.load("models/word2vec_wiki_1-3000.model")
+    evaluate_embeddings(model)
     # print("Cosine similarity between 'be' " +
           # "and 'is' - CBOW : ",
           # model.wv.similarity("be_VERB", "is_VERB"))
@@ -221,7 +244,9 @@ if __name__ == '__main__':
     print(f"word_key: {word_key}")
     vector = model.wv[word_key]
     print(f"vector by word_key {word_key}: {vector}")'''
-    model.save("wiki_1_10000_word2vec.model")
+    # print('model made')
+    # model.save("word2vec.model")
+    # print('model saved')
 
     # TODO: visualize results!
     #   maybe similarity inside of sets (similarity matrix?)
