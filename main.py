@@ -6,7 +6,7 @@ import random
 from nltk.tokenize import sent_tokenize, word_tokenize
 from nltk.tag import pos_tag_sents, pos_tag
 import numpy as np
-from scipy.stats import pearsonr
+from scipy.stats import pearsonr, spearmanr
 # import corpora
 import time
 import warnings
@@ -60,16 +60,20 @@ def preprocess_text_for_word_embedding_creation(filename):
         return text_data
 
 
-def make_word_emb_model(data):
+def make_word_emb_model(data, sg=0):
     # TODO: try if skipgram or CBOW (here, default) work better!
     # TODO: play around with different settings!
-    return gensim.models.Word2Vec(data, min_count=1, vector_size=100, window=5)
+    return gensim.models.Word2Vec(data, min_count=1, sg=sg, vector_size=100, window=5)
 
 
-# TODO: include weights?
-def load_word_set_from_csv_by_metaphor_id(df, metaphor_id, pos):
-    df = df[(df['metaphor_id'].str.contains(metaphor_id)) | (df['metaphor_id'] == metaphor_id)]
+# TODO: check and maybe improve "down"-list
+def load_word_set_from_csv_by_metaphor_id(df, metaphor_id, pos='', weights=False):
+    df = df[((df['metaphor_id'].str.contains(metaphor_id)) & (df['metaphor_id'].str.contains('\.'))) | (df['metaphor_id'] == metaphor_id)]
     word_set = df['word_pos'].tolist()
+    if weights:
+        double_words_df = df[df['weight'] == 2]
+        for dw in double_words_df['word_pos'].tolist():
+            word_set.append(dw)
     if not pos == '':
         filtered = filter(lambda word: pos in word, word_set)
         word_set = list(filtered)
@@ -120,23 +124,15 @@ def create_random_word_vector_sets(num, model, len):
     return vector_sets
 
 
-# TODO: test!
-# TODO: evaluate embeddings using human relatedness stuff and correlation:
-#   To test if this correlation is statistically significant, we can calculate the p-value
-#   associated with the Pearson correlation coefficient by using the Scipy pearsonr() function,
-#   which returns the Pearson correlation coefficient along with the two-tailed p-value.
-#       from scipy.stats.stats import pearsonr
-#       pearsonr(var1, var2)
-#       (0.335, 0.017398)
-#   The correlation coefficient is 0.335 and the two-tailed  p-value is .017.
-#   Since this p-value is less than .05, we would conclude that there is a statistically
-#   significant correlation between the two variables.
-#   (https://www.statology.org/correlation-in-python/)
-#   alternatively: Spearman correlation?
-#   for that, human_relatedness.csv has been created based on
-#   Rubenstein, H., & Goodenough, J. (1965). Contextual correlates of synonymy. Commun. ACM, 8, 627–633.
-#   https://doi.org/10.1145/365628.365657
 def evaluate_embeddings(model):
+    """
+    method to print out the evaluation of a given model in correlation (Pearson and Spearman) to a human-based list of
+    words (based on Rubenstein, H., & Goodenough, J. (1965). Contextual correlates of synonymy. Commun. ACM, 8, 627–633.
+    https://doi.org/10.1145/365628.365657)
+    For a good-functioning model, the first value is expected to be as high as possible, the pvalue is expected to be
+    less than 0.05.
+    :param model: either a Word2Vec model containing word vectors with keys formed as "Word_POS" or KeyedVectors
+    """
     df = pd.read_csv('data/human_relatedness.csv')
     gold_standard_relatedness = [float(x) for x in df['synonymy'].tolist()]
     words1 = df['word1'].tolist()
@@ -153,16 +149,17 @@ def evaluate_embeddings(model):
             break
         embedding_relatedness.append(weat.similarity(vec_word1, vec_word2, 'cosine'))
     print(pearsonr(gold_standard_relatedness, embedding_relatedness))
+    print(spearmanr(gold_standard_relatedness, embedding_relatedness))
 
 
 # method compare_each gives extremely low values, but still better than baseline
-def execute_experiment(model, method, similarity_measure, pos_tags=['']):
+def execute_experiment(model, method, similarity_measure, pos_tags=[''], weights=False):
     # read data from word sets input csv
     df = pd.read_csv(WORD_DOMAIN_SETS_FILE)
 
     # prepare output csv file
     # TODO: improve naming, depending on used model
-    output_file_path = f'results/googlenews_{method}_{similarity_measure}_{"_".join(pos_tags)}results.csv'
+    output_file_path = f'results/word2vec_wiki1-10000_skipgram_{method}_{similarity_measure}_{"_".join(pos_tags)}{"_weighted" if weights else ""}results.csv'
     with open(output_file_path, mode='w', newline='') as output_file:
         writer = csv.writer(output_file, delimiter=',')
         writer.writerow(['metaphor-id', 'metaphor-name', 'pos', 'similarity', 'baseline_performance'])
@@ -179,8 +176,8 @@ def execute_experiment(model, method, similarity_measure, pos_tags=['']):
         for i in range(1, 12):
             # load 2 word sets for metaphor
             metaphor_ids = [f'{i}_1', f'{i}_2']
-            word_set1 = load_word_set_from_csv_by_metaphor_id(df, metaphor_ids[0], pos)
-            word_set2 = load_word_set_from_csv_by_metaphor_id(df, metaphor_ids[1], pos)
+            word_set1 = load_word_set_from_csv_by_metaphor_id(df, metaphor_ids[0], pos, weights)
+            word_set2 = load_word_set_from_csv_by_metaphor_id(df, metaphor_ids[1], pos, weights)
             df1 = df[(df['metaphor_id'].str.contains(metaphor_ids[0])) | (df['metaphor_id'] == metaphor_ids[0])]
             df2 = df[(df['metaphor_id'].str.contains(metaphor_ids[1])) | (df['metaphor_id'] == metaphor_ids[1])]
             metaphor_name = f'{df1["domain"].tolist()[0]} is {df2["domain"].tolist()[0]}'
@@ -195,6 +192,7 @@ def execute_experiment(model, method, similarity_measure, pos_tags=['']):
             if method == "mean_vector":
                 mean_vec1 = create_mean_vector_from_multiple(word_set1, model)
                 mean_vec2 = create_mean_vector_from_multiple(word_set2, model)
+                # TODO: maybe use model.wv.n_similarity?
                 similarity = weat.similarity(mean_vec1, mean_vec2, similarity_measure)
                 # TODO: maybe improve way of getting mean random similarity
                 for random_vecs in random_vector_sets:
@@ -217,21 +215,23 @@ def execute_experiment(model, method, similarity_measure, pos_tags=['']):
 
 
 if __name__ == '__main__':
-    # s = corpora.preprocess_wiki_dump()
-    # s = read_text_data('data/wiki/cleaned_texts_from_1_to_10000.txt')
-    # start = time.time()
+   # start = time.time()
     # print(f'text read in {time.time() - start} seconds')
-    # data = preprocess_text_for_word_embedding_creation('data/wiki/cleaned_texts_from_1_to_3000.txt')
+    # data = preprocess_text_for_word_embedding_creation('data/wiki/cleaned_texts_from_1_to_10000.txt')
     # end = time.time()
     # print(f'preprocessing finished, time taken in secs: {end - start}')
-    # model = make_word_emb_model(data)
-    # model = KeyedVectors.load_word2vec_format('models/GoogleNews-vectors-negative300.bin', binary=True)    # TODO: training needed for better results?
-    model = Word2Vec.load("models/word2vec_wiki_1-3000.model")
-    evaluate_embeddings(model)
-    # print("Cosine similarity between 'be' " +
-          # "and 'is' - CBOW : ",
-          # model.wv.similarity("be_VERB", "is_VERB"))
-    # execute_experiment(model, 'compare_each', similarity_measure='manhattan')
+    # model = make_word_emb_model(data, sg=1)
+    # model = KeyedVectors.load_word2vec_format('models/GoogleNews-vectors-negative300.bin', binary=True)
+    model = Word2Vec.load("models/word2vec_wiki_1-10000_skipgram.model")
+    print('model loaded')
+    # sents = preprocess_text_for_word_embedding_creation('data/wiki/cleaned_texts_from_1_to_10000.txt')
+    # print('sents preprocessed')
+    # model.train(sents, total_examples=model.corpus_count, epochs=model.epochs)
+    # print('model trained')
+    # evaluate_embeddings(model)
+    # model.save("models/word2vec_wiki_1-10000_skipgram.model")
+    # print('model saved')
+    execute_experiment(model, 'compare_each', similarity_measure='cosine', weights=True)
 
     '''
     # prints first 10 entries from vocab
@@ -244,9 +244,7 @@ if __name__ == '__main__':
     print(f"word_key: {word_key}")
     vector = model.wv[word_key]
     print(f"vector by word_key {word_key}: {vector}")'''
-    # print('model made')
-    # model.save("word2vec.model")
-    # print('model saved')
+
 
     # TODO: visualize results!
     #   maybe similarity inside of sets (similarity matrix?)
