@@ -20,8 +20,8 @@ warnings.filterwarnings(action='ignore')
 # ignores tensorflow warnings and infos
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 
-
 WORD_DOMAIN_SETS_FILE = "word_sets.csv"
+
 
 # TODO: move code to different files, e.g. "corpora.py", "embeddings.py" etc.
 # TODO: train own embeddings with "real" database
@@ -32,6 +32,7 @@ WORD_DOMAIN_SETS_FILE = "word_sets.csv"
 #   (e.g. nltk.download('universal_tagset'))
 # TODO: unify meta info for all functions,
 #  https://realpython.com/documenting-python-code/#documenting-your-python-code-base-using-docstrings
+# TODO: only allow either KeyedVectors or Word2Vec model, remove all if-else options regarding this problem
 
 
 # TODO: still needed?
@@ -61,14 +62,13 @@ def preprocess_text_for_word_embedding_creation(filename):
 
 
 def make_word_emb_model(data, sg=0):
-    # TODO: try if skipgram or CBOW (here, default) work better!
     # TODO: play around with different settings!
     return gensim.models.Word2Vec(data, min_count=1, sg=sg, vector_size=100, window=5)
 
 
-# TODO: check and maybe improve "down"-list
 def load_word_set_from_csv_by_metaphor_id(df, metaphor_id, pos='', weights=False):
-    df = df[((df['metaphor_id'].str.contains(metaphor_id)) & (df['metaphor_id'].str.contains('\.'))) | (df['metaphor_id'] == metaphor_id)]
+    df = df[((df['metaphor_id'].str.contains(metaphor_id)) & (df['metaphor_id'].str.contains('\.'))) | (
+                df['metaphor_id'] == metaphor_id)]
     word_set = df['word_pos'].tolist()
     if weights:
         double_words_df = df[df['weight'] == 2]
@@ -77,10 +77,11 @@ def load_word_set_from_csv_by_metaphor_id(df, metaphor_id, pos='', weights=False
     if not pos == '':
         filtered = filter(lambda word: pos in word, word_set)
         word_set = list(filtered)
-    print(f'word_set for metaphor_id {metaphor_id} and pos {pos}: {word_set}')
+    # print(f'word_set for metaphor_id {metaphor_id} and pos {pos}: {word_set}')
     return word_set
 
 
+# TODO: decide: keep or throw away?
 # TODO: maybe include weights predefined in word_sets.csv to stress especially useful words
 def create_mean_vector_from_multiple(word_list, model=None):
     """
@@ -124,7 +125,7 @@ def create_random_word_vector_sets(num, model, len):
     return vector_sets
 
 
-def evaluate_embeddings(model):
+def evaluate_embeddings(model, similarity_measure='cosine'):
     """
     method to print out the evaluation of a given model in correlation (Pearson and Spearman) to a human-based list of
     words (based on Rubenstein, H., & Goodenough, J. (1965). Contextual correlates of synonymy. Commun. ACM, 8, 627–633.
@@ -147,33 +148,44 @@ def evaluate_embeddings(model):
             vec_word2 = model[words2[i]]
         else:
             break
-        embedding_relatedness.append(weat.similarity(vec_word1, vec_word2, 'cosine'))
+        embedding_relatedness.append(weat.similarity(vec_word1, vec_word2, similarity_measure))
+    if similarity_measure != 'cosine':
+        for i in range(len(embedding_relatedness)):
+            d = embedding_relatedness[i]
+            d_normalized = d / max(embedding_relatedness)
+            embedding_relatedness[i] = 1 - d_normalized
     print(pearsonr(gold_standard_relatedness, embedding_relatedness))
     print(spearmanr(gold_standard_relatedness, embedding_relatedness))
 
 
+def get_nr_of_metaphors_from_dataframe(df):
+    metaphor_ids = []
+    str_list = set(df['metaphor_id'].tolist())
+    for s in str_list:
+        if '.' in s:
+            s_parts = s.split('.')
+            for s_part in s_parts:
+                i = int(s_part.split('_')[0])
+                metaphor_ids.append(i)
+        else:
+            metaphor_ids.append(int(s.split('_')[0]))
+    return max(metaphor_ids)
+
+
 # method compare_each gives extremely low values, but still better than baseline
-def execute_experiment(model, method, similarity_measure, pos_tags=[''], weights=False):
+def execute_experiment(model, model_name, method, similarity_measure, pos_tags=[''], weights=False):
     # read data from word sets input csv
     df = pd.read_csv(WORD_DOMAIN_SETS_FILE)
 
     # prepare output csv file
-    # TODO: improve naming, depending on used model
-    output_file_path = f'results/word2vec_wiki1-10000_skipgram_{method}_{similarity_measure}_{"_".join(pos_tags)}{"_weighted" if weights else ""}results.csv'
+    output_file_path = f'results/{model_name}_{method}_{similarity_measure}_{"_".join(pos_tags)}{"_weighted" if weights else ""}results.csv'
     with open(output_file_path, mode='w', newline='') as output_file:
         writer = csv.writer(output_file, delimiter=',')
         writer.writerow(['metaphor-id', 'metaphor-name', 'pos', 'similarity', 'baseline_performance'])
 
-    # TODO: more general, takes all info from csv file, maybe implement
-    # get all different metaphor ids
-    # metaphor_ids = set(df['metaphor_id'].values)
-    # clean up metaphor ids that contain multiple metaphors
-    # sort list
-    # iterate all pos-tags given for experiment
     for pos in pos_tags:
-        # TODO: implicates knowledge about content of csv, maybe improve (see above)
         # iterate all metaphors
-        for i in range(1, 12):
+        for i in range(1, get_nr_of_metaphors_from_dataframe(df) + 1):
             # load 2 word sets for metaphor
             metaphor_ids = [f'{i}_1', f'{i}_2']
             word_set1 = load_word_set_from_csv_by_metaphor_id(df, metaphor_ids[0], pos, weights)
@@ -215,23 +227,32 @@ def execute_experiment(model, method, similarity_measure, pos_tags=[''], weights
 
 
 if __name__ == '__main__':
-   # start = time.time()
+    # start = time.time()
     # print(f'text read in {time.time() - start} seconds')
     # data = preprocess_text_for_word_embedding_creation('data/wiki/cleaned_texts_from_1_to_10000.txt')
     # end = time.time()
     # print(f'preprocessing finished, time taken in secs: {end - start}')
     # model = make_word_emb_model(data, sg=1)
     # model = KeyedVectors.load_word2vec_format('models/GoogleNews-vectors-negative300.bin', binary=True)
-    model = Word2Vec.load("models/word2vec_wiki_1-10000_skipgram.model")
+    model = Word2Vec.load("models/word2vec_wiki_1-100000_skipgram.model")
+    # execute_experiment(model, 'word2vec_wiki_1-100000_skipgram', 'compare_each', similarity_measure='cosine',
+    #               pos_tags=['', 'ADJ', 'VERB', 'NOUN'], weights=True)
+    # execute_experiment(model, 'word2vec_wiki_1-100000_skipgram', 'compare_each', similarity_measure='manhattan',
+    #               pos_tags=['', 'ADJ', 'VERB', 'NOUN'], weights=True)
+    # vec1 = model.wv['love_NOUN']
+    # vec2 = model.wv['warmth_NOUN']
+    # print(weat.similarity(vec1, vec2, 'manhattan'))
     print('model loaded')
-    # sents = preprocess_text_for_word_embedding_creation('data/wiki/cleaned_texts_from_1_to_10000.txt')
-    # print('sents preprocessed')
-    # model.train(sents, total_examples=model.corpus_count, epochs=model.epochs)
-    # print('model trained')
-    # evaluate_embeddings(model)
-    # model.save("models/word2vec_wiki_1-10000_skipgram.model")
-    # print('model saved')
-    execute_experiment(model, 'compare_each', similarity_measure='cosine', weights=True)
+    sents = preprocess_text_for_word_embedding_creation('data/wiki/cleaned_texts_from_100001_to_200000.txt')
+    print('sents preprocessed')
+    # model.build_vocab(sents, update=True)
+    model.train(sents, total_examples=model.corpus_count + len(sents), epochs=10)
+    print('model trained')
+    evaluate_embeddings(model)
+    model.save("models/word2vec_wiki_1-200000_skipgram.model")
+    print('model saved')
+    # execute_experiment(model, 'word2vec_wiki_1-10000_skipgram' ,'compare_each', similarity_measure='cosine',
+    #               weights=True)
 
     '''
     # prints first 10 entries from vocab
@@ -244,7 +265,6 @@ if __name__ == '__main__':
     print(f"word_key: {word_key}")
     vector = model.wv[word_key]
     print(f"vector by word_key {word_key}: {vector}")'''
-
 
     # TODO: visualize results!
     #   maybe similarity inside of sets (similarity matrix?)
