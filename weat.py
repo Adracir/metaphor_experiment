@@ -21,6 +21,12 @@ def similarity(vec1, vec2, similarity_measure):
         return np.linalg.norm(vec1 - vec2)
 
 
+# TODO: for interpretation, make also p-values https://www.scribbr.com/statistics/p-value/
+#   https://www.scribbr.com/statistics/t-test/ two-tailed, one-sampled t-test?
+#   https://www.statology.org/one-sample-t-test-python/
+#   ttest_1samp(a, popmean) where:
+#     a: an array of sample observations
+#     popmean: the expected population mean
 # TODO: maybe include normalization also for cosine, test if it works generally
 def set_s(A, B, similarity_measure):
     """calculate similarity between two sets of words
@@ -28,6 +34,8 @@ def set_s(A, B, similarity_measure):
     :param B: target set
     :param similarity_measure: kind of similarity measure to be used: cosine, manhattan, canberra or euclidian"""
     all_similarities = []
+
+    # TODO: maybe use model.wv.n_similarity for cosine?
     for a in A:
         for b in B:
             all_similarities.append(similarity(a, b, similarity_measure))
