@@ -2,6 +2,7 @@
 # https://github.com/e-mckinnie/WEAT
 # https://stackoverflow.com/questions/18424228/cosine-similarity-between-2-number-lists
 from scipy import spatial
+from scipy.stats import ttest_1samp
 import numpy as np
 
 
@@ -21,15 +22,9 @@ def similarity(vec1, vec2, similarity_measure):
         return np.linalg.norm(vec1 - vec2)
 
 
-# TODO: for interpretation, make also p-values https://www.scribbr.com/statistics/p-value/
-#   https://www.scribbr.com/statistics/t-test/ two-tailed, one-sampled t-test?
-#   https://www.statology.org/one-sample-t-test-python/
-#   ttest_1samp(a, popmean) where:
-#     a: an array of sample observations
-#     popmean: the expected population mean
 # TODO: maybe include normalization also for cosine, test if it works generally
-def set_s(A, B, similarity_measure):
-    """calculate similarity between two sets of words
+def generate_similarities(A, B, similarity_measure):
+    """calculate similarities between two sets of words
     :param A: source set
     :param B: target set
     :param similarity_measure: kind of similarity measure to be used: cosine, manhattan, canberra or euclidian"""
@@ -45,4 +40,8 @@ def set_s(A, B, similarity_measure):
             d = all_similarities[i]
             d_normalized = d / max(all_similarities)
             all_similarities[i] = 1 - d_normalized
-    return np.mean(all_similarities)
+    return all_similarities
+
+
+def t_test(similarities, baseline):
+    return ttest_1samp(similarities, baseline)

@@ -97,7 +97,7 @@ def execute_experiment(model, model_name, similarity_measure, pos_tags=[''], wei
     output_file_path = f'results/{model_name}_{similarity_measure}_{"_".join(pos_tags)}{"_weighted" if weights else ""}results.csv'
     with open(output_file_path, mode='w', newline='') as output_file:
         writer = csv.writer(output_file, delimiter=',')
-        writer.writerow(['metaphor-id', 'metaphor-name', 'pos', 'similarity', 'baseline_performance'])
+        writer.writerow(['metaphor-id', 'metaphor-name', 'pos', 'mean_similarity', 'baseline_performance', 'test_statistic', 'p_value'])
 
     unknown_words = []
     for pos in pos_tags:
@@ -110,7 +110,6 @@ def execute_experiment(model, model_name, similarity_measure, pos_tags=[''], wei
             df1 = df[(df['metaphor_id'].str.contains(metaphor_ids[0])) | (df['metaphor_id'] == metaphor_ids[0])]
             df2 = df[(df['metaphor_id'].str.contains(metaphor_ids[1])) | (df['metaphor_id'] == metaphor_ids[1])]
             metaphor_name = f'{df1["domain"].tolist()[0]} is {df2["domain"].tolist()[0]}'
-            similarity = 0
             # initiate 100 random word vector sets
             random_vector_sets = create_random_word_vector_sets(100, model, len(word_set1))
             random_similarities = []
@@ -120,28 +119,32 @@ def execute_experiment(model, model_name, similarity_measure, pos_tags=[''], wei
             unknown_words.extend(vectorized1[1])
             # calculate random baseline similarity, depending on chosen method
             for random_vecs in random_vector_sets:
-                random_similarities.append(weat.set_s(word_vecs1, random_vecs, similarity_measure))
+                random_similarities.append(np.mean(weat.generate_similarities(word_vecs1, random_vecs, similarity_measure)))
             random_similarity = np.mean(random_similarities)
             # vectorize first word list and keep unknown words in list
             vectorized2 = vectorize_word_list(word_set2, model)
             word_vecs2 = vectorized2[0]
             unknown_words.extend(vectorized2[1])
             # calculate similarity between the two domain word sets
-            similarity = weat.set_s(word_vecs1, word_vecs2, similarity_measure)
+            similarities = weat.generate_similarities(word_vecs1, word_vecs2, similarity_measure)
+            mean_similarity = np.mean(similarities)
+            ttest = weat.t_test(similarities, random_similarity)
+            test_statistic = ttest[0]
+            p_value = ttest[1]
             # write results to csv file
             with open(output_file_path, mode='a', newline='') as output_file:
                 writer = csv.writer(output_file, delimiter=',')
                 pos_string = "all" if pos == '' else pos
-                writer.writerow([i, metaphor_name, pos_string, similarity, random_similarity])
+                writer.writerow([i, metaphor_name, pos_string, mean_similarity, random_similarity, test_statistic, p_value])
     return set(unknown_words)
 
 
 if __name__ == '__main__':
     # model = KeyedVectors.load_word2vec_format('models/GoogleNews-vectors-negative300.bin', binary=True)
-    model = Word2Vec.load("models/word2vec_wiki_1-10000_skipgram_more_vocab.model")
+    model = Word2Vec.load("models/word2vec_wiki_1-400000_skipgram.model")
     # print('lala')
     # embeddings.evaluate_embeddings(model)
-    uw = execute_experiment(model, 'word2vec_wiki_1-10000_skipgram_more_vocab', similarity_measure='cosine',
+    uw = execute_experiment(model, 'word2vec_wiki_1-400000_skipgram', similarity_measure='cosine',
                    pos_tags=['', 'ADJ', 'VERB', 'NOUN'], weights=True)
     for w in uw:
         print(f'Wort nicht enthalten: {w}')
