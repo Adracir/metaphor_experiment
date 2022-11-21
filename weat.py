@@ -43,5 +43,6 @@ def generate_similarities(A, B, similarity_measure):
     return all_similarities
 
 
+# TODO: maybe use other t-test with multiple values for the baseline
 def t_test(similarities, baseline):
     return ttest_1samp(similarities, baseline)

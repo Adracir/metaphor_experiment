@@ -1,15 +1,16 @@
 import re
 from xml.etree import ElementTree as ET
 import time
+import os
 
 root = 'C:/Users/adrac/Documents/Uni/Embeddings/metaphor_experiment'
 WIKI_DUMP = "/data/wiki/enwiki-latest-pages-articles-multistream.xml"
 WIKI_DUMP_SMALL = "/data/wiki/small_test_wiki.xml"
 namespaces = {'wiki_ns': 'http://www.mediawiki.org/xml/export-0.10/'}
+AUTHOR_LIST = "data/gutenberg/english_american_authors.txt"
 
 
-# TODO: enable cleaning chunks and saving to differently named files, making it possible to stop and continue cleaning
-def preprocess_wiki_dump_timed_cached_test(begin_at, end_at):
+def preprocess_wiki_dump(begin_at, end_at):
     """
     cleans wikipedia text at a wanted chunk and saves cleaned text to txt file
     :param begin_at: begins at this page (inclusive)
@@ -140,9 +141,82 @@ def preprocess_wiki_dump_timed_cached_test(begin_at, end_at):
 def repl(matchobj):
     return matchobj.group(2)
 
+
+def make_authors_list():
+    with open(AUTHOR_LIST, 'r', encoding='utf8') as file:
+        author_list = file.readlines()
+        for i in (range(len(author_list))):
+            author_cleaned = re.sub('(\s\(.*)?(,.*)?\n?', '', author_list[i])
+            author_list[i] = author_cleaned
+    return author_list
+
+
+def iterate_gutenberg_index_files_saving_useful_indices(author_list):
+    indices = []
+    # assign directory
+    directory = 'data/gutenberg'
+    with open('data/gutenberg/indices.txt', 'w', encoding='utf8') as i_f:
+        i_f.write('----- START -----\n')
+    # iterate over files in
+    # that directory
+    for filename in os.listdir(directory):
+        f = os.path.join(directory, filename)
+        # checking if it is a file
+        if os.path.isfile(f) and re.match('GUTINDEX.*', filename):
+            print(f'filename to be opened: {filename}')
+            with open(f, 'r', encoding='utf8') as file:
+                lines = file.readlines()
+                last_read_relevant_title = ''
+                last_read_title = ''
+                for line in lines:
+                    possible_author_match = re.search('(.*?)(by)( .*?)(\d{1,5}\w?\n)', line)
+                    title_match = re.match('.*?\d{1,5}\w?\n', line)
+                    lang_match = re.search('(\[Language:) (.*?)(\])', line)
+                    author_name = [ele for ele in author_list if(ele in line)]
+                    if title_match:
+                        last_read_title = line
+                    if possible_author_match and bool(author_name):
+                        title = possible_author_match.group(1)
+                        if not 'Audio:' in title:
+                            last_read_relevant_title = line
+                            indices.append(possible_author_match.group(4))
+                            # TODO: maybe only write indices to file
+                            with open('data/gutenberg/indices.txt', 'a', encoding='utf8') as i_f:
+                                i_f.write(f'FILE:   {filename}\n')
+                                i_f.write(f'LINE:   {line}')
+                                i_f.write(f'TITLE:  {title}\n')
+                                i_f.write(f'AUTHOR: {author_name}\n')
+                                i_f.write(f'INDEX:  {possible_author_match.group(4)}-----\n')
+                    elif lang_match:
+                        lang = re.sub('\s+', '', lang_match.group(2))
+                        if (lang != 'English') and (last_read_title == last_read_relevant_title):
+                            with open('data/gutenberg/indices.txt', 'a', encoding='utf8') as fp:
+                                # TODO: remove from indices
+                                '''# read and store all lines into list
+                                lines = fp.readlines()
+                                # move file pointer to the beginning of a file
+                                fp.seek(0)
+                                # truncate the file
+                                fp.truncate()
+
+                                # start writing lines except the last line
+                                # lines[:-1] from line 0 to the second last line
+                                fp.writelines(lines[:-6])'''
+                                fp.write('!!! REMOVE LAST ENTRY !!!')
+        # with open('data/gutenberg/indices.txt', 'w') as i_f:623-611=12
+           # for index in indices:
+               # i_f.write(f"{index}")
+    return indices
+
+
 # TODO: problem: the later you start, the more "foreplay" there is (e.g. 108s before 300000)
 # TODO: maybe make automated way of cleaning chunks of the (whole?) text
 start = time.time()
-preprocess_wiki_dump_timed_cached_test(begin_at=1, end_at=3000)
+author_list = make_authors_list()
+indices = iterate_gutenberg_index_files_saving_useful_indices(author_list)
+print(f'len indices: {len(indices)}')
+print(f'len set indices: {len(set(indices))}')
+duplicates = [number for number in indices if indices.count(number) > 1]
+print(f'duplicates: {set(duplicates)}')
 end = time.time()
 print(f'time taken in seconds: {end - start}')

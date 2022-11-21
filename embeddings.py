@@ -72,7 +72,7 @@ def evaluate_embeddings(model, similarity_measure='cosine'):
 # model = make_word_emb_model(data, vec_dim=300)
 # model = KeyedVectors.load_word2vec_format('models/GoogleNews-vectors-negative300.bin', binary=True)
 # model1 = Word2Vec.load("models/word2vec_wiki_1-200000_skipgram_more_vocab2.model")
-model = Word2Vec.load("models/word2vec_wiki_1-300000_skipgram.model")
+'''model = Word2Vec.load("models/word2vec_wiki_1-300000_skipgram.model")
 
 sents = preprocess_text_for_word_embedding_creation('data/wiki/cleaned_texts_from_300001_to_400000.txt')
 print('sents preprocessed')
@@ -81,7 +81,7 @@ model.train(sents, total_examples=model.corpus_count, epochs=10)
 print('model trained')
 evaluate_embeddings(model)
 model.save("models/word2vec_wiki_1-400000_skipgram.model")
-print('model saved')
+print('model saved')'''
 
 '''
 # prints first 10 entries from vocab
