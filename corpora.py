@@ -2,6 +2,7 @@ import re
 from xml.etree import ElementTree as ET
 import time
 import os
+from os.path import exists
 
 root = 'C:/Users/adrac/Documents/Uni/Embeddings/metaphor_experiment'
 WIKI_DUMP = "/data/wiki/enwiki-latest-pages-articles-multistream.xml"
@@ -59,6 +60,8 @@ def preprocess_wiki_dump(begin_at, end_at):
                     # TODO: maybe exclude texts starting with {{Commons cat
                     #  as they seem to take long to process... but may contain also useful content :/
                     #   or maybe skip some known long cleaning texts by counter, e.g. 527114
+                    # TODO: problem: the later you start, the more "foreplay" there is (e.g. 108s before 300000)
+                    # TODO: maybe make automated way of cleaning chunks of the (whole?) text
                     # ignores whole page if it starts with #REDIRECT or {{wiktionary (only redirects to other pages)
                     if not re.match('(#REDIRECT)|(\{\{wiktionary)|(\[\[Wikipedia:Free_On-line_Dictionary_of_Computing/symbols)', p_text):
                         # removes &quot; (quotation mark)
@@ -155,7 +158,7 @@ def iterate_gutenberg_index_files_saving_useful_indices(author_list):
     indices = []
     # assign directory
     directory = 'data/gutenberg'
-    with open('data/gutenberg/indices.txt', 'w', encoding='utf8') as i_f:
+    with open('data/gutenberg/indices_lookup.txt', 'w', encoding='utf8') as i_f:
         i_f.write('----- START -----\n')
     # iterate over files in
     # that directory
@@ -180,8 +183,8 @@ def iterate_gutenberg_index_files_saving_useful_indices(author_list):
                         if not 'Audio:' in title:
                             last_read_relevant_title = line
                             indices.append(possible_author_match.group(4))
-                            # TODO: maybe only write indices to file
-                            with open('data/gutenberg/indices.txt', 'a', encoding='utf8') as i_f:
+                            # writes infos to lookup file
+                            with open('data/gutenberg/indices_lookup.txt', 'a', encoding='utf8') as i_f:
                                 i_f.write(f'FILE:   {filename}\n')
                                 i_f.write(f'LINE:   {line}')
                                 i_f.write(f'TITLE:  {title}\n')
@@ -190,33 +193,54 @@ def iterate_gutenberg_index_files_saving_useful_indices(author_list):
                     elif lang_match:
                         lang = re.sub('\s+', '', lang_match.group(2))
                         if (lang != 'English') and (last_read_title == last_read_relevant_title):
-                            with open('data/gutenberg/indices.txt', 'a', encoding='utf8') as fp:
-                                # TODO: remove from indices
-                                '''# read and store all lines into list
-                                lines = fp.readlines()
-                                # move file pointer to the beginning of a file
-                                fp.seek(0)
-                                # truncate the file
-                                fp.truncate()
-
-                                # start writing lines except the last line
-                                # lines[:-1] from line 0 to the second last line
-                                fp.writelines(lines[:-6])'''
-                                fp.write('!!! REMOVE LAST ENTRY !!!')
-        # with open('data/gutenberg/indices.txt', 'w') as i_f:623-611=12
-           # for index in indices:
-               # i_f.write(f"{index}")
+                            indices.pop()
+    with open('data/gutenberg/indices.txt', 'w') as i_f:
+       for index in indices:
+           i_f.write(f"{index}")
     return indices
 
 
-# TODO: problem: the later you start, the more "foreplay" there is (e.g. 108s before 300000)
-# TODO: maybe make automated way of cleaning chunks of the (whole?) text
-start = time.time()
-author_list = make_authors_list()
-indices = iterate_gutenberg_index_files_saving_useful_indices(author_list)
-print(f'len indices: {len(indices)}')
-print(f'len set indices: {len(set(indices))}')
-duplicates = [number for number in indices if indices.count(number) > 1]
-print(f'duplicates: {set(duplicates)}')
-end = time.time()
-print(f'time taken in seconds: {end - start}')
+# enables input of range to be cleaned (all files range from 1 to 37807)
+#   iterates all gutenberg txt files in the respective folder
+#   generatse cleaned string of all files, removing:
+#       everything before and incl. "*** START OF...***"
+#       everything after "*** END OF...***"
+#       footnotes, marked with []
+def preprocess_gutenberg_dump(begin_at, end_at):
+    raw_files = 'data/gutenberg/raw_files'
+    existing = []
+    cleaned_texts = []
+    for i in range(begin_at, end_at):
+        x = [int(a) for a in str(i)]
+        path = ''
+        if len(x) == 1:
+            path = f'/{i}/{i}.txt'
+        else:
+            for num in x[:-1]:
+                path += f'/{num}'
+            path += f'/{i}/{i}.txt'
+        if exists(raw_files + path):
+            existing.append(i)
+            print(i)
+            with open(raw_files + path, 'r') as file:
+                uncleaned_str = file.read()
+                split_beginning = re.split('\*\*\*\s?START OF.*?\n?.*?\*\*\*', uncleaned_str)
+                without_beginning = split_beginning[1] if len(split_beginning) > 1 else uncleaned_str
+                split_end = re.split('\*\*\*\s?END OF.*?\n?.*?\*\*\*', without_beginning)
+                without_end = split_end[0] if len(split_end) > 1 else without_beginning
+                cleaned = re.sub('\[.*?\]', '', without_end)
+                # TODO: remove remaining asterisks. why do they remain anyways?
+                #   remove "" marks and stuff
+                #   remove _ _
+                cleaned_texts.append(cleaned)
+    # save cleaned text
+    file_name = f'cleaned_texts_from_{begin_at}_to_{end_at}.txt'
+    text_file = open(root + '/data/gutenberg/' + file_name, 'w', encoding="utf-8")
+    cleaned_text_string = "".join(cleaned_texts)
+    text_file.write(cleaned_text_string)
+    text_file.close()
+    print(f'saved {len(cleaned_texts)} cleaned texts to file {file_name}')
+    return cleaned_text_string
+
+
+preprocess_gutenberg_dump(1, 4000)

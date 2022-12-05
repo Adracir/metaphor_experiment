@@ -29,6 +29,7 @@ def preprocess_text_for_word_embedding_creation(filename):
         return text_data
 
 
+# TODO: make glove embeddings instead?
 def make_word_emb_model(data, sg=0, vec_dim=100):
     # TODO: play around with different settings!
     return gensim.models.Word2Vec(data, min_count=1, sg=sg, vector_size=vec_dim, window=5)
