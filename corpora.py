@@ -202,7 +202,7 @@ def iterate_gutenberg_index_files_saving_useful_indices(author_list):
 
 # enables input of range to be cleaned (all files range from 1 to 37807)
 #   iterates all gutenberg txt files in the respective folder
-#   generatse cleaned string of all files, removing:
+#   generates cleaned string of all files, removing:
 #       everything before and incl. "*** START OF...***"
 #       everything after "*** END OF...***"
 #       footnotes, marked with []
@@ -224,14 +224,17 @@ def preprocess_gutenberg_dump(begin_at, end_at):
             print(i)
             with open(raw_files + path, 'r') as file:
                 uncleaned_str = file.read()
+                # removing beginning and end meta info
                 split_beginning = re.split('\*\*\*\s?START OF.*?\n?.*?\*\*\*', uncleaned_str)
                 without_beginning = split_beginning[1] if len(split_beginning) > 1 else uncleaned_str
                 split_end = re.split('\*\*\*\s?END OF.*?\n?.*?\*\*\*', without_beginning)
                 without_end = split_end[0] if len(split_end) > 1 else without_beginning
+                # removing footnotes and underscores
                 cleaned = re.sub('\[.*?\]', '', without_end)
-                # TODO: remove remaining asterisks. why do they remain anyways?
-                #   remove "" marks and stuff
-                #   remove _ _
+                cleaned = re.sub('_', '', cleaned)
+                # removing some remaining meta info
+                cleaned = re.sub('End of the Project Gutenberg EBook.*?\n', '', cleaned)
+                cleaned = re.sub('Produced by .*?HTML version by.*?\n', '', cleaned)
                 cleaned_texts.append(cleaned)
     # save cleaned text
     file_name = f'cleaned_texts_from_{begin_at}_to_{end_at}.txt'
@@ -243,4 +246,4 @@ def preprocess_gutenberg_dump(begin_at, end_at):
     return cleaned_text_string
 
 
-preprocess_gutenberg_dump(1, 4000)
+preprocess_gutenberg_dump(8001, 16000)

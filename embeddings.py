@@ -20,7 +20,7 @@ def preprocess_text_for_word_embedding_creation(filename):
         sents = sent_tokenize(s)
         print('starting to simple_preprocess')
         for sent in sents:
-            tokenized.append(gu.simple_preprocess(sent))
+            tokenized.append(gu.simple_preprocess(sent, min_len=1, max_len=30))
         print('starting to pos-tag')
         tagged = pos_tag_sents(tokenized, tagset='universal', lang='eng')
         # TODO: is this method sensible? It for sure solves the KeyError-problem!
@@ -29,7 +29,6 @@ def preprocess_text_for_word_embedding_creation(filename):
         return text_data
 
 
-# TODO: make glove embeddings instead?
 def make_word_emb_model(data, sg=0, vec_dim=100):
     # TODO: play around with different settings!
     return gensim.models.Word2Vec(data, min_count=1, sg=sg, vector_size=vec_dim, window=5)
@@ -68,20 +67,20 @@ def evaluate_embeddings(model, similarity_measure='cosine'):
     print(spearmanr(gold_standard_relatedness, embedding_relatedness))
 
 
-# data = preprocess_text_for_word_embedding_creation('data/wiki/cleaned_texts_from_1_to_10000.txt')
+# data = preprocess_text_for_word_embedding_creation('data/gutenberg/cleaned_texts_from_1_to_4000.txt')
 # print('sents preprocessed')
-# model = make_word_emb_model(data, vec_dim=300)
+# model = make_word_emb_model(data, sg=1)
 # model = KeyedVectors.load_word2vec_format('models/GoogleNews-vectors-negative300.bin', binary=True)
 # model1 = Word2Vec.load("models/word2vec_wiki_1-200000_skipgram_more_vocab2.model")
-'''model = Word2Vec.load("models/word2vec_wiki_1-300000_skipgram.model")
+# model = Word2Vec.load("models/word2vec_wiki_1-300000_skipgram.model")
 
-sents = preprocess_text_for_word_embedding_creation('data/wiki/cleaned_texts_from_300001_to_400000.txt')
-print('sents preprocessed')
-model.build_vocab(sents, update=True)
-model.train(sents, total_examples=model.corpus_count, epochs=10)
-print('model trained')
+# sents = preprocess_text_for_word_embedding_creation('data/wiki/cleaned_texts_from_300001_to_400000.txt')
+# print('sents preprocessed')
+# model.build_vocab(sents, update=True)
+# model.train(sents, total_examples=model.corpus_count, epochs=10)
+'''print('model trained')
 evaluate_embeddings(model)
-model.save("models/word2vec_wiki_1-400000_skipgram.model")
+model.save("models/word2vec_gutenberg_1-4000_skipgram.model")
 print('model saved')'''
 
 '''
