@@ -27,7 +27,8 @@ def output_to_plot(filename, pos="all"):
     plt.xticks(x, metaphor_names, rotation ='vertical')
     plt.xlabel("Metaphors")
     plt.ylabel('Similarities')
-    # TODO: maybe make p-value visible if it exists
+    # TODO: maybe make p-value visible if it exists:
+    #  as differently formed points for significant vs not significant values
     # plot similarities
     plt.plot(x, similarities, 'go')
     plt.plot(x, similarities, 'r-', label="Similarity between domains")

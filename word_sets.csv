@@ -36,7 +36,7 @@ size_NOUN,size,1_2,2
 range_NOUN,size,1_2,1
 immensity_NOUN,size,1_2,1
 enormity_NOUN,size,1_2,1
-enormousness_NOUN,size,1_2,1
+magnitude_NOUN,size,1_2,1
 bigness_NOUN,size,1_2,1
 massiveness_NOUN,size,1_2,1
 big_ADJ,size,1_2,2
@@ -80,7 +80,7 @@ persist_VERB,life,2_2.3_1.5_2,1
 experience_VERB,life,2_2.3_1.5_2,1
 endure_VERB,life,2_2.3_1.5_2,1
 life_NOUN,life,2_2.3_1.5_2,2
-being_NOUN,life,2_2.3_1.5_2,1
+living_NOUN,life,2_2.3_1.5_2,1
 liveliness_NOUN,life,2_2.3_1.5_2,1
 vitality_NOUN,life,2_2.3_1.5_2,1
 existence_NOUN,life,2_2.3_1.5_2,1
@@ -113,7 +113,7 @@ route_NOUN,journey,3_2,1
 trip_NOUN,journey,3_2,1
 mobile_ADJ,journey,3_2,1
 moving_ADJ,journey,3_2,1
-voyaging_ADJ,journey,3_2,1
+cruising_ADJ,journey,3_2,1
 traveling_ADJ,journey,3_2,2
 itinerant_ADJ,journey,3_2,1
 roving_ADJ,journey,3_2,1
@@ -268,7 +268,7 @@ glow_VERB,warmth,7_2,1
 melt_VERB,warmth,7_2,1
 thaw_VERB,warmth,7_2,1
 steam_VERB,warmth,7_2,1
-enflame_VERB,warmth,7_2,1
+ignite_VERB,warmth,7_2,1
 fire_VERB,warmth,7_2,1
 boil_VERB,warmth,7_2,1
 warmth_NOUN,warmth,7_2,2
@@ -304,7 +304,7 @@ finance_NOUN,money,8_1,1
 investment_NOUN,money,8_1,1
 budget_NOUN,money,8_1,1
 monetary_ADJ,money,8_1,1
-paying_ADJ,money,8_1,1
+profitable_ADJ,money,8_1,1
 wealthy_ADJ,money,8_1,1
 financial_ADJ,money,8_1,2
 economic_ADJ,money,8_1,1
@@ -424,7 +424,7 @@ sinking_NOUN,down,10_2,1
 underside_NOUN,down,10_2,1
 ground_NOUN,down,10_2,1
 low_ADJ,down,10_2,1
-declining_ADJ,down,10_2,1
+underneath_ADJ,down,10_2,1
 downward_ADJ,down,10_2,1
 down_ADJ,down,10_2,2
 below_ADJ,down,10_2,1

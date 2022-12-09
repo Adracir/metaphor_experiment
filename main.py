@@ -139,10 +139,10 @@ def execute_experiment(model, model_name, similarity_measure, pos_tags=[''], wei
 
 if __name__ == '__main__':
     # model = KeyedVectors.load_word2vec_format('models/GoogleNews-vectors-negative300.bin', binary=True)
-    model = Word2Vec.load("models/word2vec_gutenberg_1-4000_skipgram.model")
+    model = Word2Vec.load("models/word2vec_gutenberg_1-8000_skipgram.model")
     # print('lala')
     # embeddings.evaluate_embeddings(model)
-    uw = execute_experiment(model, 'word2vec_gutenberg_1-4000_skipgram', similarity_measure='cosine',
+    uw = execute_experiment(model, 'word2vec_gutenberg_1-8000_skipgram', similarity_measure='cosine',
                    pos_tags=['', 'ADJ', 'VERB', 'NOUN'], weights=True)
     for w in uw:
         print(f'Wort nicht enthalten: {w}')
