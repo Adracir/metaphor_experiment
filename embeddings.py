@@ -72,25 +72,12 @@ def evaluate_embeddings(model, similarity_measure='cosine'):
 # model = make_word_emb_model(data, sg=1)
 # model = KeyedVectors.load_word2vec_format('models/GoogleNews-vectors-negative300.bin', binary=True)
 # model1 = Word2Vec.load("models/word2vec_wiki_1-200000_skipgram_more_vocab2.model")
-model = Word2Vec.load("models/word2vec_gutenberg_1-4000_skipgram.model")
-# TODO: next train with 16001-26000, promises most words. but still, some will need to be changed
-sents = preprocess_text_for_word_embedding_creation('data/gutenberg/cleaned_texts_from_4001_to_8000.txt')
+model = Word2Vec.load("models/word2vec_gutenberg_1-8000_skipgram.model")
+sents = preprocess_text_for_word_embedding_creation('data/gutenberg/cleaned_texts_from_16001_to_26000.txt')
 print('sents preprocessed')
 model.build_vocab(sents, update=True)
 model.train(sents, total_examples=model.corpus_count, epochs=10)
 print('model trained')
 evaluate_embeddings(model)
-model.save("models/word2vec_gutenberg_1-8000_skipgram.model")
+model.save("models/word2vec_gutenberg_1-8000_16001-26000_skipgram.model")
 print('model saved')
-
-'''
-# prints first 10 entries from vocab
-word_key = ''
-for index, word in enumerate(model.wv.index_to_key):
-    if index == 10:
-        word_key = word
-        break
-    print(f"word #{index}/{len(model.wv.index_to_key)} is {word}")
-print(f"word_key: {word_key}")
-vector = model.wv[word_key]
-print(f"vector by word_key {word_key}: {vector}")'''

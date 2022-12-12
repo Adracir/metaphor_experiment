@@ -57,10 +57,10 @@ start_VERB,active,2_1,1
 stimulate_VERB,active,2_1,1
 action_NOUN,active,2_1,1
 activity_NOUN,active,2_1,1
-activation_NOUN,active,2_1,1
+energy_NOUN,active,2_1,1
 movement_NOUN,active,2_1,1
 exercise_NOUN,active,2_1,1
-activeness_NOUN,active,2_1,2
+mobilization_NOUN,active,2_1,2
 animation_NOUN,active,2_1,1
 motion_NOUN,active,2_1,1
 active_ADJ,active,2_1,2
@@ -113,7 +113,7 @@ route_NOUN,journey,3_2,1
 trip_NOUN,journey,3_2,1
 mobile_ADJ,journey,3_2,1
 moving_ADJ,journey,3_2,1
-cruising_ADJ,journey,3_2,1
+sailing_ADJ,journey,3_2,1
 traveling_ADJ,journey,3_2,2
 itinerant_ADJ,journey,3_2,1
 roving_ADJ,journey,3_2,1
@@ -257,7 +257,7 @@ friendship_NOUN,affection,7_1,1
 feeling_NOUN,affection,7_1,1
 loving_ADJ,affection,7_1,1
 affectionate_ADJ,affection,7_1,2
-caring_ADJ,affection,7_1,1
+gentle_ADJ,affection,7_1,1
 attached_ADJ,affection,7_1,1
 intimate_ADJ,affection,7_1,1
 devoted_ADJ,affection,7_1,1
