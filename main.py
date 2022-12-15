@@ -27,7 +27,7 @@ WORD_DOMAIN_SETS_FILE = "word_sets.csv"
 # TODO: only allow either KeyedVectors or Word2Vec or Glove model, remove all if-else options regarding this problem
 
 
-def load_word_set_from_csv_by_metaphor_id(df, metaphor_id, pos='', weights=False):
+def load_word_set_from_csv_by_metaphor_id(df, metaphor_id, pos='all', weights=False):
     df = df[((df['metaphor_id'].str.contains(metaphor_id)) & (df['metaphor_id'].str.contains('\.'))) | (
             df['metaphor_id'] == metaphor_id)]
     word_set = df['word_pos'].tolist()
@@ -35,7 +35,7 @@ def load_word_set_from_csv_by_metaphor_id(df, metaphor_id, pos='', weights=False
         double_words_df = df[df['weight'] == 2]
         for dw in double_words_df['word_pos'].tolist():
             word_set.append(dw)
-    if not pos == '':
+    if not pos == 'all':
         filtered = filter(lambda word: pos in word, word_set)
         word_set = list(filtered)
     # print(f'word_set for metaphor_id {metaphor_id} and pos {pos}: {word_set}')
@@ -86,13 +86,14 @@ def get_nr_of_metaphors_from_dataframe(df):
     return max(metaphor_ids)
 
 
+# TODO: goal: have 8 files for each final corpus: 2 per similarity measure: weighted and unweighted
 # method compare_each gives extremely low values, but still better than baseline
-def execute_experiment(model, model_name, similarity_measure, pos_tags=[''], weights=False):
+def execute_experiment(model, model_name, similarity_measure, pos_tags=['all', 'ADJ', 'VERB', 'NOUN'], weights=False):
     # read data from word sets input csv
     df = pd.read_csv(WORD_DOMAIN_SETS_FILE)
 
     # prepare output csv file
-    output_file_path = f'results/{model_name}_{similarity_measure}_{"_".join(pos_tags)}{"_weighted" if weights else ""}results.csv'
+    output_file_path = f'results/{model_name}_{similarity_measure}_{"-".join(pos_tags)}{"_weighted_" if weights else "_"}results.csv'
     with open(output_file_path, mode='w', newline='') as output_file:
         writer = csv.writer(output_file, delimiter=',')
         writer.writerow(['metaphor-id', 'metaphor-name', 'pos', 'mean_similarity', 'baseline_performance', 'test_statistic', 'p_value'])
@@ -132,20 +133,15 @@ def execute_experiment(model, model_name, similarity_measure, pos_tags=[''], wei
             # write results to csv file
             with open(output_file_path, mode='a', newline='') as output_file:
                 writer = csv.writer(output_file, delimiter=',')
-                pos_string = "all" if pos == '' else pos
-                writer.writerow([i, metaphor_name, pos_string, mean_similarity, random_similarity, test_statistic, p_value])
+                writer.writerow([i, metaphor_name, pos, mean_similarity, random_similarity, test_statistic, p_value])
     return set(unknown_words)
 
 
-# TODO: mobilization & energy in "active"-NOUNs? sailing or flying instead of cruising_ADJ?
-#  tender or gentle instead of caring?
 if __name__ == '__main__':
     # model = KeyedVectors.load_word2vec_format('models/GoogleNews-vectors-negative300.bin', binary=True)
-    # model = Word2Vec.load("models/word2vec_gutenberg_1-8000_16001-26000_skipgram.model")
-    model = Word2Vec.load("models/word2vec_wiki_1-200000_skipgram_more_vocab2.model")
-    vecs_obj = vectorize_word_list(['mobilization_NOUN', 'energy_NOUN', 'sailing_ADJ', 'gentle_ADJ'], model)
-    print(f'nicht enthalten: {vecs_obj[1]}')
-    # uw = execute_experiment(model, 'word2vec_gutenberg_1-8000_16001-26000_skipgram', similarity_measure='cosine',
-                   # pos_tags=['', 'ADJ', 'VERB', 'NOUN'], weights=True)
-    # for w in uw:
-        # print(f'Wort nicht enthalten: {w}')
+    # model = Word2Vec.load("models/word2vec_gutenberg_1-8000u16001-26000_skipgram.model")
+    model = Word2Vec.load("models/word2vec_wiki_1-10000_skipgram_better-preprocessing.model")
+    uw = execute_experiment(model, 'word2vec_wiki_1-10000_skipgram_better-preprocessing', similarity_measure='cosine',
+                            weights=True)
+    for w in uw:
+        print(f'Wort nicht enthalten: {w}')
