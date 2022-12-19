@@ -1,5 +1,7 @@
 .idea
 __pycache__
-data
+data/**
+!data/human_relatedness.csv
+!data/word_sets.csv
 models
-results
+archive

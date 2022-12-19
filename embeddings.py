@@ -1,5 +1,5 @@
 
-import weat
+import calc
 import pandas as pd
 from nltk.tokenize import sent_tokenize, word_tokenize
 from nltk.tag import pos_tag_sents, pos_tag
@@ -71,7 +71,7 @@ def evaluate_embeddings(model, similarity_measure='cosine'):
 # print('sents preprocessed')
 # model = make_word_emb_model(data, sg=1)
 # model = KeyedVectors.load_word2vec_format('models/GoogleNews-vectors-negative300.bin', binary=True)
-# model1 = Word2Vec.load("models/word2vec_wiki_1-200000_skipgram_more_vocab2.model")
+# model1 = Word2Vec.load("models/word2vec_wiki_1-200000_skipgram.model")
 model = Word2Vec.load("models/word2vec_wiki_1-3000_skipgram_better-preprocessing.model")
 sents = preprocess_text_for_word_embedding_creation('data/wiki/cleaned_texts_from_1_to_10000.txt')
 print('sents preprocessed')

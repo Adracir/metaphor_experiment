@@ -6,7 +6,6 @@ from scipy.stats import ttest_1samp
 import numpy as np
 
 
-# TODO: maybe rename class
 def similarity(vec1, vec2, similarity_measure):
     """calculate similarity of two word vectors
     :param vec1: vector of first word

@@ -1,6 +1,7 @@
 import csv
 
-import weat
+import calc
+import plot
 # import embeddings
 import pandas as pd
 import random
@@ -14,11 +15,9 @@ warnings.filterwarnings(action='ignore')
 # ignores tensorflow warnings and infos
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 
-WORD_DOMAIN_SETS_FILE = "word_sets.csv"
+WORD_DOMAIN_SETS_FILE = "data/word_sets.csv"
 
 
-# TODO: train own embeddings with "real" database
-#   gutenberg?
 # TODO: make requirements.txt,
 #   also find out how to deal with resources that had to be downloaded from nltk in the code
 #   (e.g. nltk.download('universal_tagset'))
@@ -56,7 +55,7 @@ def vectorize_word_list(word_list, model):
         except KeyError:
             unknown_words.append(word)
     # TODO: maybe find better way to analyze unknown words
-    return (word_vecs, set(unknown_words))
+    return word_vecs, set(unknown_words)
 
 
 def create_random_word_vector_sets(num, model, len):
@@ -118,16 +117,16 @@ def execute_experiment(model, model_name, similarity_measure, pos_tags=['all', '
             unknown_words.extend(vectorized1[1])
             # calculate random baseline similarity, depending on chosen method
             for random_vecs in random_vector_sets:
-                random_similarities.append(np.mean(weat.generate_similarities(word_vecs1, random_vecs, similarity_measure)))
+                random_similarities.append(np.mean(calc.generate_similarities(word_vecs1, random_vecs, similarity_measure)))
             random_similarity = np.mean(random_similarities)
             # vectorize first word list and keep unknown words in list
             vectorized2 = vectorize_word_list(word_set2, model)
             word_vecs2 = vectorized2[0]
             unknown_words.extend(vectorized2[1])
             # calculate similarity between the two domain word sets
-            similarities = weat.generate_similarities(word_vecs1, word_vecs2, similarity_measure)
+            similarities = calc.generate_similarities(word_vecs1, word_vecs2, similarity_measure)
             mean_similarity = np.mean(similarities)
-            ttest = weat.t_test(similarities, random_similarity)
+            ttest = calc.t_test(similarities, random_similarity)
             test_statistic = ttest[0]
             p_value = ttest[1]
             # write results to csv file
@@ -138,10 +137,19 @@ def execute_experiment(model, model_name, similarity_measure, pos_tags=['all', '
 
 
 if __name__ == '__main__':
-    # model = KeyedVectors.load_word2vec_format('models/GoogleNews-vectors-negative300.bin', binary=True)
-    # model = Word2Vec.load("models/word2vec_gutenberg_1-8000u16001-26000_skipgram.model")
-    model = Word2Vec.load("models/word2vec_wiki_1-10000_skipgram_better-preprocessing.model")
-    uw = execute_experiment(model, 'word2vec_wiki_1-10000_skipgram_better-preprocessing', similarity_measure='cosine',
-                            weights=True)
-    for w in uw:
-        print(f'Wort nicht enthalten: {w}')
+    model1 = Word2Vec.load("models/word2vec_gutenberg_1-8000u16001-26000_skipgram.model")
+    model2 = Word2Vec.load("models/word2vec_wiki_1-200000_skipgram.model")
+    execute_experiment(model1, 'word2vec_gutenberg_1-8000u16001-26000_skipgram', similarity_measure='euclidian',
+                           weights=False)
+    execute_experiment(model2, 'word2vec_wiki_1-200000_skipgram', similarity_measure='euclidian',
+                           weights=False)
+    execute_experiment(model1, 'word2vec_gutenberg_1-8000u16001-26000_skipgram', similarity_measure='euclidian',
+                           weights=True)
+    execute_experiment(model2, 'word2vec_wiki_1-200000_skipgram', similarity_measure='euclidian',
+                           weights=True)
+    for pos in ["all", "ADJ", "VERB", "NOUN"]:
+        plot.output_to_plot('results/word2vec_gutenberg_1-8000u16001-26000_skipgram_euclidian_all-ADJ-VERB-NOUN_results.csv', pos=pos)
+        plot.output_to_plot('results/word2vec_gutenberg_1-8000u16001-26000_skipgram_euclidian_all-ADJ-VERB-NOUN_weighted_results.csv', pos=pos)
+        plot.output_to_plot('results/word2vec_wiki_1-200000_skipgram_euclidian_all-ADJ-VERB-NOUN_weighted_results.csv', pos=pos)
+        plot.output_to_plot('results/word2vec_wiki_1-200000_skipgram_euclidian_all-ADJ-VERB-NOUN_results.csv', pos=pos)
+

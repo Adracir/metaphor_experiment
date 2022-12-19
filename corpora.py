@@ -6,7 +6,6 @@ from os.path import exists
 
 root = 'C:/Users/adrac/Documents/Uni/Embeddings/metaphor_experiment'
 WIKI_DUMP = "/data/wiki/enwiki-latest-pages-articles-multistream.xml"
-WIKI_DUMP_SMALL = "/data/wiki/small_test_wiki.xml"
 namespaces = {'wiki_ns': 'http://www.mediawiki.org/xml/export-0.10/'}
 AUTHOR_LIST = "data/gutenberg/english_american_authors.txt"
 

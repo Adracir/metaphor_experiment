@@ -1,12 +1,49 @@
-# TODO: visualize results from execute-experiment (with plotly?)
-#   combine gutenberg and wiki data in one graphic
-#   make separate graphics for word forms
-#   make separate graphics for calculation methods
 import re
 
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+from gensim.models import Word2Vec
+
+
+# TODO: maybe delete, as results are not so relevant
+def plot_word_counts(model1_filename, model2_filename):
+    df = pd.read_csv("word_sets.csv")
+    domains = set(df['domain'].tolist())
+    model1 = Word2Vec.load(model1_filename)
+    model2 = Word2Vec.load(model2_filename)
+    vocab_len1 = len(model1.wv.index_to_key)
+    vocab_len2 = len(model2.wv.index_to_key)
+    for domain in domains:
+        df = pd.read_csv("word_sets.csv")
+        df = df[df['domain'] == domain]
+        words = df['word_pos'].tolist()
+        print(f'domain: {domain}, words: {str(words)}')
+        frequencies1 = []  # TODO: rename?
+        frequencies2 = []
+        for word in words:
+            frequencies1.append(1-(model1.wv.key_to_index[word]/vocab_len1))
+            frequencies2.append(1-(model2.wv.key_to_index[word]/vocab_len2))
+        x = np.arange(len(words))
+        plt.clf()
+        ax = plt.gca()
+        # TODO: title
+        # TODO: maybe start with a little spacing on the left
+        ax.set_xlim(0, len(words))
+        plt.xticks(x, words, rotation='vertical')
+        plt.xlabel("Words")
+        plt.ylabel("Frequencies")  # TODO: rename?
+        plt.plot(x, frequencies1, 'go', label='model1 frequency')  # TODO: rename?
+        plt.plot(x, frequencies2, 'bo', label='model2 frequency')
+        plt.legend()
+        # sets tight layout (so that nothing is cut out)
+        plt.tight_layout()
+        # save diagram
+        fig = plt.gcf()
+        path = f'results/plots/frequencies_plot_{domain}.png'
+        fig.savefig(path)
+        plt.close(fig)
+        print("plot saved")
 
 
 # TODO: does it make sense to have info from two files in one plot?
@@ -59,33 +96,38 @@ def output_to_plot(filename, filename2="", pos="all"):
         plt.plot(x, similarities2, 'm-', label=f"Similarity between domains {splitted_infos2[1]}")
         # plot baseline performance 2
         plt.plot(x, baseline_performance2, 'c-', label=f"Similarity to random baseline {splitted_infos2[1]}")
-    '''x_filt = x[x > 3]
-    x_filt_green = x[(p_value[x] < 0.01) & (test_statistic[x] >= 0)]
-    y_filt_green = similarities[(p_value < 0.01) & (test_statistic >= 0)]
-    plt.plot(x_filt_green, y_filt_green, 'gs', label="positively significant values")
-    x_filt_red = x[(p_value < 0.01) & (test_statistic < 0)]
-    y_filt_red = similarities[(p_value < 0.01) & (test_statistic < 0)]
-    plt.plot(x_filt_red, y_filt_red, 'rs', label="negatively significant values")'''
-    # TODO: add to legend
+    # TODO: make less verbose?
     # makes significance visible
+    negative_lgd_label = False
+    positive_lgd_label = False
     for i in range(len(x)):
         if p_value[i] < 0.01:
             color = 'g' if test_statistic[i] >= 0 else 'r'
-            plt.plot(x[i], similarities[i], f'{color}s')
+            lgd_label = ''
+            if test_statistic[i] >= 0 and not positive_lgd_label:
+                lgd_label = 'significant (positive)'
+                positive_lgd_label = True
+            if test_statistic[i] < 0 and not negative_lgd_label:
+                lgd_label = 'significant (negative)'
+                negative_lgd_label = True
+            plt.plot(x[i], similarities[i], f'{color}s', label=lgd_label)
         if filename2 and p_value2[i] < 0.01:
             color2 = 'g' if test_statistic2[i] >= 0 else 'r'
-            plt.plot(x[i], similarities2[i], f'{color2}s')
+            lgd_label2 = ''
+            if test_statistic2[i] >= 0 and not positive_lgd_label:
+                lgd_label2 = 'significant (positive)'
+                positive_lgd_label = True
+            if test_statistic2[i] < 0 and not negative_lgd_label:
+                lgd_label2 = 'significant (negative)'
+                negative_lgd_label = True
+            plt.plot(x[i], similarities2[i], f'{color2}s', label=lgd_label2)
     plt.legend()
     # sets tight layout (so that nothing is cut out)
     plt.tight_layout()
     # save diagram
     fig = plt.gcf()
-    fig.set_size_inches(10, 5.5)
-    path = f'results/plots/{splitted_infos[1]}{f"-{splitted_infos2[1]}" if filename2 else ""}_{splitted_infos[4]}_{pos}_{"weighted" if splitted_infos[6] == "weighted" else ""}_plot.png'
+    fig.set_size_inches(10, 8)
+    path = f'results/plots/{splitted_infos[1]}{f"-{splitted_infos2[1]}" if filename2 else ""}_{splitted_infos[4]}_{pos}_{"weighted_" if splitted_infos[6] == "weighted" else ""}plot.png'
     fig.savefig(path)
     plt.close(fig)
     print("plot saved")
-
-
-output_to_plot('results/word2vec_gutenberg_1-8000u16001-26000_skipgram_cosine_all-ADJ-VERB-NOUN_weighted_results.csv',
-               'results/word2vec_wiki_1-200000_skipgram-more-vocab2_cosine_all-ADJ-VERB-NOUN_weighted_results.csv')
