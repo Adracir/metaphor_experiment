@@ -12,30 +12,13 @@ AUTHOR_LIST = "data/gutenberg/english_american_authors.txt"
 
 def preprocess_wiki_dump(begin_at, end_at):
     """
-    cleans wikipedia text at a wanted chunk and saves cleaned text to txt file
+    cleans wikipedia text at a given chunk and saves cleaned text to txt file
     :param begin_at: begins at this page (inclusive)
     :param end_at: ends at this page (inclusive)
-    :return: cleaned text of the taken pages
+    :return: cleaned text of the specified pages
     """
     start = time.time()
     cleaned_texts = []
-
-    # counts found elements to see if some stuff is useless:
-    '''quotations = 0
-    tables = 0
-    references = 0
-    curved_brackets = 0
-    italic_bold_marks = 0
-    categories = 0
-    files = 0
-    square_brackets_content = 0
-    double_square_brackets = 0
-    table_leftovers = 0
-    links = 0
-    html_tags = 0
-    html_comments = 0
-    stars = 0'''
-
     counter = 0
     # parse tree and take only text elements
     for event, elem in ET.iterparse(root + WIKI_DUMP, events=("start", "end")):
@@ -50,63 +33,39 @@ def preprocess_wiki_dump(begin_at, end_at):
                     # TODO: maybe find better method to parse text than to use ''.join(p_text.itertext())
                     # take only inner text
                     p_text = ''.join(elem.itertext())
-                    # writes uncleaned text to file, needed for analysis of long-cleaning texts
-                    # uncleaned_file = open(f'{root}/data/wiki/uncleaned_{counter}.txt', 'w', encoding='utf-8')
-                    # uncleaned_file.write((p_text))
-                    # uncleaned_file.close()
 
-
-                    # TODO: maybe exclude texts starting with {{Commons cat
-                    #  as they seem to take long to process... but may contain also useful content :/
-                    #   or maybe skip some known long cleaning texts by counter, e.g. 527114
-                    # TODO: problem: the later you start, the more "foreplay" there is (e.g. 108s before 300000)
-                    # TODO: maybe make automated way of cleaning chunks of the (whole?) text
                     # ignores whole page if it starts with #REDIRECT or {{wiktionary (only redirects to other pages)
                     if not re.match('(#REDIRECT)|(\{\{wiktionary)|(\[\[Wikipedia:Free_On-line_Dictionary_of_Computing/symbols)', p_text):
                         # removes &quot; (quotation mark)
-                        # quotations += len(re.findall("&quot;", p_text))
                         p_text = re.sub('&quot;', '', p_text)
                         # removes stuff inside {||} (tables)
-                        # tables += len(re.findall("\{\|[\s\S]*?\|\}", p_text))
                         p_text = re.sub('\{\|[\s\S]*?\|\}', '', p_text)
                         # removes stuff inside {{}}(references, meta)
-                        # references += len(re.findall('\{\{[\s\S]*?\}\}', p_text))
                         p_text = re.sub('\{\{[\s\S]*?\}\}', '', p_text)
                         # accepts content left over from nested brackets, but cleans up the brackets themselves
-                        # curved_brackets += len(re.findall('\{\{|\}\}', p_text))
                         p_text = re.sub('\{\{|\}\}', '', p_text)
                         # removes '' (marks text as italic) and ''' '''(marks text as bold)
-                        # italic_bold_marks += len(re.findall('(\'){2,3}', p_text))
                         p_text = re.sub('(\'){2,3}', '', p_text)
                         # removes stuff inside [[Category: ]] (links to wiki categories)
-                        # categories += len(re.findall('\[\[Category\:.*?\]\]', p_text))
                         p_text = re.sub('\[\[Category\:.*?\]\]', '', p_text)
                         # removes stuff inside [[File:]] (image metadata & image description)
-                        # files += len(re.findall('\[\[File:.*?\|+.*(\]\])+', p_text))
                         p_text = re.sub('\[\[File:.*?\|+.*(\]\])+', '', p_text)
                         # removes remaining square brackets and chooses what content to keep
-                        # square_brackets_content += len(re.findall("(\[\[.[^\[\]]*?\|)(.*?)(\]\])", p_text))
                         p_text = re.sub("(\[\[.[^\[\]]*?\|)(.*?)(\]\])", repl, p_text)
                         # clean up all [[ ]] that are left
-                        # double_square_brackets += len(re.findall("\[\[|\]\]", p_text))
                         p_text = re.sub("\[\[|\]\]", "", p_text)
                         # removes leftovers from tables
-                        # table_leftovers += len(re.findall('\|.[^ \n]*', p_text))
                         p_text = re.sub('\|.[^ \n]*', '', p_text)
                         # clean up also links in [ ]
-                        # links += len(re.findall('\[.*?\]', p_text))
                         p_text = re.sub('\[.*?\]', '', p_text)
                         # br-tags (makes next step less complex, especially for long lists
                         p_text = re.sub('<br>', ' ', p_text)
                         # TODO: too complex? decomplexify? :D
                         # removes remaining html tags and their content
-                        # html_tags += len(re.findall('(<\w+?.[^\/]*?>[\s\S]*?<\/\w+?>)|(<\w+?.*?\/>)', p_text))
                         p_text = re.sub('(<\w+?.[^\/]*?>[\s\S]*?<\/\w+?>)|(<\w+?.*?\/>)', '', p_text)
                         # removes html comments
-                        # html_comments += len(re.findall('<!--.*?-->', p_text))
                         p_text = re.sub('<!--.*?-->', '', p_text)
                         # removes stars
-                        # stars += len(re.findall('\*', p_text))
                         p_text = re.sub('\*', '', p_text)
                         # removes newlines
                         p_text = re.sub('\n', ' ', p_text)
@@ -124,27 +83,23 @@ def preprocess_wiki_dump(begin_at, end_at):
     text_file.write(cleaned_text_string)
     text_file.close()
     print(f'saved {len(cleaned_texts)} cleaned texts to file {file_name}')
-    '''print(f'quotations = {quotations}')
-    print(f'tables = {tables}')
-    print(f'references = {references}')
-    print(f'curved_brackets = {curved_brackets}')
-    print(f'italic_bold_marks = {italic_bold_marks}')
-    print(f'categories = {categories}')
-    print(f'files = {files}')
-    print(f'square_brackets_content = {square_brackets_content}')
-    print(f'double_square_brackets = {double_square_brackets}')
-    print(f'table_leftovers = {table_leftovers}')
-    print(f'links = {links}')
-    print(f'html_tags = {html_tags}')
-    print(f'html_comments = {html_comments}')'''
     return cleaned_text_string
 
 
 def repl(matchobj):
+    """
+    helper function for preprocess_wiki_dump, replaces regex match object with its' second match group
+    :param matchobj: regex match object containing at least 2 groups
+    :return: second match group
+    """
     return matchobj.group(2)
 
 
-def make_authors_list():
+def parse_authors_list():
+    """
+    reads author list file and turns it into python list to use in iterate_gutenberg_index_files_saving_useful_indices
+    :return: python list containing author names from file as separate elements
+    """
     with open(AUTHOR_LIST, 'r', encoding='utf8') as file:
         author_list = file.readlines()
         for i in (range(len(author_list))):
@@ -154,31 +109,42 @@ def make_authors_list():
 
 
 def iterate_gutenberg_index_files_saving_useful_indices(author_list):
+    """
+    iterates gutenberg index files to extract the files that are useful
+    (only texts written in english by authors from author list)
+    1. saves indices of useful files in indices.txt
+    2. saves more info about each useful file in indices_lookup.txt
+    :param author_list: list of author names, can be generated by parse_authors_list
+    :return: list of useful indices
+    """
     indices = []
     # assign directory
     directory = 'data/gutenberg'
     with open('data/gutenberg/indices_lookup.txt', 'w', encoding='utf8') as i_f:
         i_f.write('----- START -----\n')
-    # iterate over files in
-    # that directory
+    # iterate over files in that directory
     for filename in os.listdir(directory):
         f = os.path.join(directory, filename)
-        # checking if it is a file
+        # checking if it is a gutenberg index file
         if os.path.isfile(f) and re.match('GUTINDEX.*', filename):
             print(f'filename to be opened: {filename}')
+            # open file and iterate lines
             with open(f, 'r', encoding='utf8') as file:
                 lines = file.readlines()
                 last_read_relevant_title = ''
                 last_read_title = ''
                 for line in lines:
+                    # extract info about line
                     possible_author_match = re.search('(.*?)(by)( .*?)(\d{1,5}\w?\n)', line)
                     title_match = re.match('.*?\d{1,5}\w?\n', line)
                     lang_match = re.search('(\[Language:) (.*?)(\])', line)
+                    # check if author in author-list
                     author_name = [ele for ele in author_list if(ele in line)]
                     if title_match:
                         last_read_title = line
                     if possible_author_match and bool(author_name):
                         title = possible_author_match.group(1)
+                        # ignore audio files and append match to lookup file
                         if not 'Audio:' in title:
                             last_read_relevant_title = line
                             indices.append(possible_author_match.group(4))
@@ -189,28 +155,33 @@ def iterate_gutenberg_index_files_saving_useful_indices(author_list):
                                 i_f.write(f'TITLE:  {title}\n')
                                 i_f.write(f'AUTHOR: {author_name}\n')
                                 i_f.write(f'INDEX:  {possible_author_match.group(4)}-----\n')
+                    # if language is explicitely mentioned and not english, remove corresponding title from list
                     elif lang_match:
                         lang = re.sub('\s+', '', lang_match.group(2))
                         if (lang != 'English') and (last_read_title == last_read_relevant_title):
                             indices.pop()
+    # write all generated indices to file
     with open('data/gutenberg/indices.txt', 'w') as i_f:
-       for index in indices:
-           i_f.write(f"{index}")
+        for index in indices:
+            i_f.write(f"{index}")
     return indices
 
 
-# enables input of range to be cleaned (all files range from 1 to 37807)
-#   iterates all gutenberg txt files in the respective folder
-#   generates cleaned string of all files, removing:
-#       everything before and incl. "*** START OF...***"
-#       everything after "*** END OF...***"
-#       footnotes, marked with []
 def preprocess_gutenberg_dump(begin_at, end_at):
+    """
+    cleans a range of gutenberg texts of meta information, footnotes and other elements not useful for embedding
+    creation and save cleaned text to file
+    :param begin_at: index to start at (must not be a real index, inclusive)
+    :param end_at: index to end at (must not be a real index, exclusive)
+    :return: cleaned string, combining all files in the given range
+    """
     raw_files = 'data/gutenberg/raw_files'
     existing = []
     cleaned_texts = []
+    # iterates all gutenberg txt files in the given range of possible indices
     for i in range(begin_at, end_at):
         x = [int(a) for a in str(i)]
+        # generate path to look for file
         path = ''
         if len(x) == 1:
             path = f'/{i}/{i}.txt'
@@ -221,6 +192,7 @@ def preprocess_gutenberg_dump(begin_at, end_at):
         if exists(raw_files + path):
             existing.append(i)
             print(i)
+            # if file exists at the path, start cleaning text
             with open(raw_files + path, 'r') as file:
                 uncleaned_str = file.read()
                 # removing beginning and end meta info

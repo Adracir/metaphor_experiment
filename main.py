@@ -85,8 +85,6 @@ def get_nr_of_metaphors_from_dataframe(df):
     return max(metaphor_ids)
 
 
-# TODO: goal: have 8 files for each final corpus: 2 per similarity measure: weighted and unweighted
-# method compare_each gives extremely low values, but still better than baseline
 def execute_experiment(model, model_name, similarity_measure, pos_tags=['all', 'ADJ', 'VERB', 'NOUN'], weights=False):
     # read data from word sets input csv
     df = pd.read_csv(WORD_DOMAIN_SETS_FILE)
