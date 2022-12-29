@@ -19,22 +19,23 @@ def preprocess_text_for_word_embedding_creation(filename):
         # https://github.com/nltk/nltk/issues/3013
         sents = sent_tokenize(s)
         print('starting to simple_preprocess')
+        # simple-preprocess sentences using gu (word tokenization, etc.)
         for sent in sents:
             tokenized.append(gu.simple_preprocess(sent, min_len=1, max_len=30))
         print('starting to pos-tag')
+        # pos-tag words using nltk
         tagged = pos_tag_sents(tokenized, tagset='universal', lang='eng')
-        # TODO: is this method sensible? It for sure solves the KeyError-problem!
         print('formatting pos-tags')
+        # connect pos-tag to word
         [text_data.append([t[0] + "_" + t[1] for t in sent]) for sent in tagged]
         return text_data
 
 
 def make_word_emb_model(data, sg=0, vec_dim=100):
-    # TODO: play around with different settings!
     return gensim.models.Word2Vec(data, min_count=1, sg=sg, vector_size=vec_dim, window=5)
 
 
-def evaluate_embeddings(model, similarity_measure='cosine'):
+def evaluate_embeddings(model, distance_measure='cosine'):
     """
     method to print out the evaluation of a given model in correlation (Pearson and Spearman) to a human-based list of
     words (based on Rubenstein, H., & Goodenough, J. (1965). Contextual correlates of synonymy. Commun. ACM, 8, 627–633.
@@ -42,7 +43,7 @@ def evaluate_embeddings(model, similarity_measure='cosine'):
     For a good-functioning model, the first value is expected to be as high as possible, the pvalue is expected to be
     less than 0.05
     :param model: either a Word2Vec model containing word vectors with keys formed as "Word_POS" or KeyedVectors
-    :param similarity_measure: one of 'cosine', 'manhattan', 'canberra', 'euclidian'. Determines used similarity/distance measure
+    :param distance_measure: one of 'cosine', 'manhattan', 'canberra', 'euclidian'. Determines used similarity/distance measure
     """
     df = pd.read_csv('data/human_relatedness.csv')
     gold_standard_relatedness = [float(x) for x in df['synonymy'].tolist()]
@@ -50,35 +51,27 @@ def evaluate_embeddings(model, similarity_measure='cosine'):
     words2 = df['word2'].tolist()
     embedding_relatedness = []
     for i in range(0, len(words1)):
-        if type(model) == Word2Vec:
-            vec_word1 = model.wv[words1[i] + '_NOUN']
-            vec_word2 = model.wv[words2[i] + '_NOUN']
-        elif type(model) == KeyedVectors:
-            vec_word1 = model[words1[i]]
-            vec_word2 = model[words2[i]]
-        else:
-            break
-        embedding_relatedness.append(calc.similarity(vec_word1, vec_word2, similarity_measure))
-    if similarity_measure != 'cosine':
-        for i in range(len(embedding_relatedness)):
-            d = embedding_relatedness[i]
+        vec_word1 = model.wv[words1[i] + '_NOUN']
+        vec_word2 = model.wv[words2[i] + '_NOUN']
+        embedding_relatedness.append(calc.distance(vec_word1, vec_word2, distance_measure))
+    for i in range(len(embedding_relatedness)):
+        d = embedding_relatedness[i]
+        if distance_measure != 'cosine':
             d_normalized = d / max(embedding_relatedness)
-            embedding_relatedness[i] = 1 - d_normalized
+        else:
+            d_normalized = d
+        embedding_relatedness[i] = 1 - d_normalized
     print(pearsonr(gold_standard_relatedness, embedding_relatedness))
     print(spearmanr(gold_standard_relatedness, embedding_relatedness))
 
 
-data = preprocess_text_for_word_embedding_creation('data/wiki/cleaned_texts_from_1_to_3000.txt')
-print('sents preprocessed')
-model = make_word_emb_model(data, sg=1)
-# model = KeyedVectors.load_word2vec_format('models/GoogleNews-vectors-negative300.bin', binary=True)
-# model1 = Word2Vec.load("models/word2vec_wiki_1-200000_skipgram.model")
+# data = preprocess_text_for_word_embedding_creation('data/wiki/cleaned_texts_from_1_to_3000.txt')
+# print('sents preprocessed')
+# model = make_word_emb_model(data, sg=1)
+model = Word2Vec.load("models/word2vec_wiki_1-200000_skipgram.model")
 '''model = Word2Vec.load("models/word2vec_wiki_1-3000_skipgram_better-preprocessing.model")
 sents = preprocess_text_for_word_embedding_creation('data/wiki/cleaned_texts_from_1_to_10000.txt')
 print('sents preprocessed')
 model.build_vocab(sents, update=True)
 model.train(sents, total_examples=model.corpus_count, epochs=10)'''
-print('model trained')
 evaluate_embeddings(model)
-model.save("models/word2vec_wiki_1-3000_skipgram-window-10.model")
-print('model saved')

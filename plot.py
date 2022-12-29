@@ -78,7 +78,7 @@ def output_to_plot(filename, filename2="", pos="all"):
         print('!!! WARNING: Files are not equal in either used metaphors, used methods or weights !!! Please use only '
               'files that are equal in these aspects to plot a graph')
         return
-    plt.title(f'Korpora: {splitted_infos[1]}{f" & {splitted_infos2[1]}" if filename2 else ""}, similarity measure: '
+    plt.title(f'Korpora: {splitted_infos[1]}{f" & {splitted_infos2[1]}" if filename2 else ""}, distance measure: '
               f'{splitted_infos[4]}, POS: {pos}, weighted: {"yes" if splitted_infos[6] == "weighted" else "no"}')
     x = np.arange(len(similarities))
     ax = plt.gca()

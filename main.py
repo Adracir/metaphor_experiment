@@ -46,12 +46,7 @@ def vectorize_word_list(word_list, model):
     unknown_words = []
     for word in word_list:
         try:
-            if type(model) == KeyedVectors:
-                word_vecs.append(model[word.split('_')[0]])
-            elif model:  # model is Word2vec
-                word_vecs.append(model.wv[word])
-            else:
-                word_vecs.append(word)
+            word_vecs.append(model.wv[word])
         except KeyError:
             unknown_words.append(word)
     # TODO: maybe find better way to analyze unknown words
@@ -63,10 +58,7 @@ def create_random_word_vector_sets(num, model, len):
     for n in range(num):
         temp = []
         for l in range(len):
-            if type(model) == KeyedVectors:
-                temp.append(model[random.choice(model.index_to_key)])
-            else:
-                temp.append(model.wv[random.choice(model.wv.index_to_key)])
+            temp.append(model.wv[random.choice(model.wv.index_to_key)])
         vector_sets.append(temp)
     return vector_sets
 
@@ -113,7 +105,7 @@ def execute_experiment(model, model_name, similarity_measure, pos_tags=['all', '
             vectorized1 = vectorize_word_list(word_set1, model)
             word_vecs1 = vectorized1[0]
             unknown_words.extend(vectorized1[1])
-            # calculate random baseline similarity, depending on chosen method
+            # calculate random baseline distance, depending on chosen method
             for random_vecs in random_vector_sets:
                 random_similarities.append(np.mean(calc.generate_similarities(word_vecs1, random_vecs, similarity_measure)))
             random_similarity = np.mean(random_similarities)
@@ -121,7 +113,7 @@ def execute_experiment(model, model_name, similarity_measure, pos_tags=['all', '
             vectorized2 = vectorize_word_list(word_set2, model)
             word_vecs2 = vectorized2[0]
             unknown_words.extend(vectorized2[1])
-            # calculate similarity between the two domain word sets
+            # calculate distance between the two domain word sets
             similarities = calc.generate_similarities(word_vecs1, word_vecs2, similarity_measure)
             mean_similarity = np.mean(similarities)
             ttest = calc.t_test(similarities, random_similarity)
@@ -137,11 +129,11 @@ def execute_experiment(model, model_name, similarity_measure, pos_tags=['all', '
 if __name__ == '__main__':
     model1 = Word2Vec.load("models/word2vec_gutenberg_1-8000u16001-26000_skipgram.model")
     model2 = Word2Vec.load("models/word2vec_wiki_1-200000_skipgram.model")
-    execute_experiment(model1, 'word2vec_gutenberg_1-8000u16001-26000_skipgram', similarity_measure='euclidian',
+    execute_experiment(model1, 'TEST-word2vec_gutenberg_1-8000u16001-26000_skipgram', similarity_measure='cosine',
                            weights=False)
-    execute_experiment(model2, 'word2vec_wiki_1-200000_skipgram', similarity_measure='euclidian',
+    execute_experiment(model2, 'TEST-word2vec_wiki_1-200000_skipgram', similarity_measure='cosine',
                            weights=False)
-    execute_experiment(model1, 'word2vec_gutenberg_1-8000u16001-26000_skipgram', similarity_measure='euclidian',
+    '''execute_experiment(model1, 'word2vec_gutenberg_1-8000u16001-26000_skipgram', similarity_measure='euclidian',
                            weights=True)
     execute_experiment(model2, 'word2vec_wiki_1-200000_skipgram', similarity_measure='euclidian',
                            weights=True)
@@ -149,5 +141,5 @@ if __name__ == '__main__':
         plot.output_to_plot('results/word2vec_gutenberg_1-8000u16001-26000_skipgram_euclidian_all-ADJ-VERB-NOUN_results.csv', pos=pos)
         plot.output_to_plot('results/word2vec_gutenberg_1-8000u16001-26000_skipgram_euclidian_all-ADJ-VERB-NOUN_weighted_results.csv', pos=pos)
         plot.output_to_plot('results/word2vec_wiki_1-200000_skipgram_euclidian_all-ADJ-VERB-NOUN_weighted_results.csv', pos=pos)
-        plot.output_to_plot('results/word2vec_wiki_1-200000_skipgram_euclidian_all-ADJ-VERB-NOUN_results.csv', pos=pos)
+        plot.output_to_plot('results/word2vec_wiki_1-200000_skipgram_euclidian_all-ADJ-VERB-NOUN_results.csv', pos=pos)'''
 
