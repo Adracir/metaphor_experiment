@@ -77,7 +77,7 @@ def get_nr_of_metaphors_from_dataframe(df):
     return max(metaphor_ids)
 
 
-def execute_experiment(model, model_name, similarity_measure, pos_tags=['all', 'ADJ', 'VERB', 'NOUN'], weights=False):
+def execute_experiment(model, model_name, similarity_measure, random_vector_sets, pos_tags=['all', 'ADJ', 'VERB', 'NOUN'], weights=False):
     # read data from word sets input csv
     df = pd.read_csv(WORD_DOMAIN_SETS_FILE)
 
@@ -99,7 +99,7 @@ def execute_experiment(model, model_name, similarity_measure, pos_tags=['all', '
             df2 = df[(df['metaphor_id'].str.contains(metaphor_ids[1])) | (df['metaphor_id'] == metaphor_ids[1])]
             metaphor_name = f'{df1["domain"].tolist()[0]} is {df2["domain"].tolist()[0]}'
             # initiate 100 random word vector sets
-            random_vector_sets = create_random_word_vector_sets(100, model, len(word_set1))
+            # random_vector_sets = create_random_word_vector_sets(100, model, len(word_set1))
             random_similarities = []
             # vectorize first word list and keep unknown words in list
             vectorized1 = vectorize_word_list(word_set1, model)
@@ -129,15 +129,53 @@ def execute_experiment(model, model_name, similarity_measure, pos_tags=['all', '
 if __name__ == '__main__':
     model1 = Word2Vec.load("models/word2vec_gutenberg_1-8000u16001-26000_skipgram.model")
     model2 = Word2Vec.load("models/word2vec_wiki_1-200000_skipgram.model")
-    execute_experiment(model1, 'TEST-word2vec_gutenberg_1-8000u16001-26000_skipgram', similarity_measure='cosine',
+    # generate one large set of random vectors per model for all calculations
+    random_vector_sets1 = create_random_word_vector_sets(250, model1, 24)
+    random_vector_sets2 = create_random_word_vector_sets(250, model2, 24)
+    # save random vectors for future calculations
+    with open('data/gutenberg_random_vector_sets.txt', 'w') as gfile:
+        for vec in random_vector_sets1:
+            gfile.write(f"{vec}")
+    with open('data/wiki_random_vector_sets.txt', 'w') as wfile:
+        for vec in random_vector_sets2:
+            wfile.write(f"{vec}")
+    execute_experiment(model1, 'BL-word2vec_gutenberg_1-8000u16001-26000_skipgram', random_vector_sets=random_vector_sets1, similarity_measure='cosine',
                            weights=False)
-    execute_experiment(model2, 'TEST-word2vec_wiki_1-200000_skipgram', similarity_measure='cosine',
+    execute_experiment(model2, 'BL-word2vec_wiki_1-200000_skipgram', random_vector_sets=random_vector_sets2, similarity_measure='cosine',
                            weights=False)
-    '''execute_experiment(model1, 'word2vec_gutenberg_1-8000u16001-26000_skipgram', similarity_measure='euclidian',
+    execute_experiment(model1, 'BL-word2vec_gutenberg_1-8000u16001-26000_skipgram', random_vector_sets=random_vector_sets1, similarity_measure='cosine',
                            weights=True)
-    execute_experiment(model2, 'word2vec_wiki_1-200000_skipgram', similarity_measure='euclidian',
+    execute_experiment(model2, 'BL-word2vec_wiki_1-200000_skipgram', random_vector_sets=random_vector_sets2, similarity_measure='cosine',
                            weights=True)
-    for pos in ["all", "ADJ", "VERB", "NOUN"]:
+    print("Cosine done")
+    execute_experiment(model1, 'BL-word2vec_gutenberg_1-8000u16001-26000_skipgram', random_vector_sets=random_vector_sets1, similarity_measure='euclidian',
+                           weights=False)
+    execute_experiment(model2, 'BL-word2vec_wiki_1-200000_skipgram', random_vector_sets=random_vector_sets2, similarity_measure='euclidian',
+                           weights=False)
+    execute_experiment(model1, 'BL-word2vec_gutenberg_1-8000u16001-26000_skipgram', random_vector_sets=random_vector_sets1, similarity_measure='euclidian',
+                           weights=True)
+    execute_experiment(model2, 'BL-word2vec_wiki_1-200000_skipgram', random_vector_sets=random_vector_sets2, similarity_measure='euclidian',
+                           weights=True)
+    print("Euclidian done")
+    execute_experiment(model1, 'BL-word2vec_gutenberg_1-8000u16001-26000_skipgram', random_vector_sets=random_vector_sets1, similarity_measure='manhattan',
+                           weights=False)
+    execute_experiment(model2, 'BL-word2vec_wiki_1-200000_skipgram', random_vector_sets=random_vector_sets2, similarity_measure='manhattan',
+                           weights=False)
+    execute_experiment(model1, 'BL-word2vec_gutenberg_1-8000u16001-26000_skipgram', random_vector_sets=random_vector_sets1, similarity_measure='manhattan',
+                           weights=True)
+    execute_experiment(model2, 'BL-word2vec_wiki_1-200000_skipgram', random_vector_sets=random_vector_sets2, similarity_measure='manhattan',
+                           weights=True)
+    print("Manhattan done")
+    execute_experiment(model1, 'BL-word2vec_gutenberg_1-8000u16001-26000_skipgram', random_vector_sets=random_vector_sets1, similarity_measure='canberra',
+                           weights=False)
+    execute_experiment(model2, 'BL-word2vec_wiki_1-200000_skipgram', random_vector_sets=random_vector_sets2, similarity_measure='canberra',
+                           weights=False)
+    execute_experiment(model1, 'BL-word2vec_gutenberg_1-8000u16001-26000_skipgram', random_vector_sets=random_vector_sets1, similarity_measure='canberra',
+                           weights=True)
+    execute_experiment(model2, 'BL-word2vec_wiki_1-200000_skipgram', random_vector_sets=random_vector_sets2, similarity_measure='canberra',
+                           weights=True)
+    print("Canberra done")
+    '''for pos in ["all", "ADJ", "VERB", "NOUN"]:
         plot.output_to_plot('results/word2vec_gutenberg_1-8000u16001-26000_skipgram_euclidian_all-ADJ-VERB-NOUN_results.csv', pos=pos)
         plot.output_to_plot('results/word2vec_gutenberg_1-8000u16001-26000_skipgram_euclidian_all-ADJ-VERB-NOUN_weighted_results.csv', pos=pos)
         plot.output_to_plot('results/word2vec_wiki_1-200000_skipgram_euclidian_all-ADJ-VERB-NOUN_weighted_results.csv', pos=pos)

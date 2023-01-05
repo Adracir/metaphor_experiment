@@ -54,13 +54,7 @@ def evaluate_embeddings(model, distance_measure='cosine'):
         vec_word1 = model.wv[words1[i] + '_NOUN']
         vec_word2 = model.wv[words2[i] + '_NOUN']
         embedding_relatedness.append(calc.distance(vec_word1, vec_word2, distance_measure))
-    for i in range(len(embedding_relatedness)):
-        d = embedding_relatedness[i]
-        if distance_measure != 'cosine':
-            d_normalized = d / max(embedding_relatedness)
-        else:
-            d_normalized = d
-        embedding_relatedness[i] = 1 - d_normalized
+    embedding_relatedness = calc.normalize_and_reverse_distances(embedding_relatedness, distance_measure)
     print(pearsonr(gold_standard_relatedness, embedding_relatedness))
     print(spearmanr(gold_standard_relatedness, embedding_relatedness))
 

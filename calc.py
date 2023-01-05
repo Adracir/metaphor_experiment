@@ -29,20 +29,30 @@ def generate_similarities(A, B, distance_measure):
     :param distance_measure: kind of distance measure to be used: cosine, manhattan, canberra or euclidian
     :return: array containing all calculated similarities between all of the values of source and target set
     """
-    all_similarities = []
-
+    distances = []
     for a in A:
         for b in B:
-            all_similarities.append(distance(a, b, distance_measure))
+            distances.append(distance(a, b, distance_measure))
     # normalize distance and subtract from 1 to generate distance
-    for i in range(len(all_similarities)):
-        d = all_similarities[i]
+    all_similarities = normalize_and_reverse_distances(distances, distance_measure)
+    return all_similarities
+
+
+def normalize_and_reverse_distances(distances, distance_measure):
+    """
+    normalizes distance calculation results and reverses them so that they represent similarities
+    :param distances: array of calculated distances
+    :param distance_measure: used distance measure as string: cosine, manhattan, canberra or euclidian
+    :return: array of similarities between 0 and 1, 1 being most similar
+    """
+    for i in range(len(distances)):
+        d = distances[i]
         if distance_measure != 'cosine':
-            d_normalized = d / max(all_similarities)
+            d_normalized = d / max(distances)
         else:
             d_normalized = d
-        all_similarities[i] = 1 - d_normalized
-    return all_similarities
+        distances[i] = 1 - d_normalized
+    return distances
 
 
 def t_test(similarities, baseline):
