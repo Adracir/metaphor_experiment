@@ -27,21 +27,34 @@ WORD_DOMAIN_SETS_FILE = "data/word_sets.csv"
 
 
 def load_word_set_from_csv_by_metaphor_id(df, metaphor_id, pos='all', weights=False):
+    """
+    loads set of words from a given pandas dataframe generated from the file data/word_sets.csv
+    :param df: dataframe
+    :param metaphor_id: for each set of words, 'metaphor-nr'_'domain-nr', for example 1_1 for the first domain of the first metaphor
+    :param pos: pos-tag, 'NOUN', 'VERB', 'ADJ' or 'all'
+    :param weights: should weighted words be double in the set?
+    :return: a list of words to which all of the above applies
+    """
     df = df[((df['metaphor_id'].str.contains(metaphor_id)) & (df['metaphor_id'].str.contains('\.'))) | (
             df['metaphor_id'] == metaphor_id)]
-    word_set = df['word_pos'].tolist()
+    word_list = df['word_pos'].tolist()
     if weights:
         double_words_df = df[df['weight'] == 2]
         for dw in double_words_df['word_pos'].tolist():
-            word_set.append(dw)
+            word_list.append(dw)
     if not pos == 'all':
-        filtered = filter(lambda word: pos in word, word_set)
-        word_set = list(filtered)
-    # print(f'word_set for metaphor_id {metaphor_id} and pos {pos}: {word_set}')
-    return word_set
+        filtered = filter(lambda word: pos in word, word_list)
+        word_list = list(filtered)
+    return word_list
 
 
 def vectorize_word_list(word_list, model):
+    """
+    a helper method to retrieve the corresponding word vectors to a list of words
+    :param word_list: list of words
+    :param model: Word2Vec model to retrieve the word vectors from
+    :return: a list of word vectors, a set of words that were not in the vocabulary of the model
+    """
     word_vecs = []
     unknown_words = []
     for word in word_list:
@@ -54,6 +67,13 @@ def vectorize_word_list(word_list, model):
 
 
 def create_random_word_vector_sets(num, model, len):
+    """
+    helps create random vector sets
+    :param num: number of vector sets wanted
+    :param model: Word2Vec model to retrieve the vectors from
+    :param len: number of vectors per set
+    :return: list with len num of lists with len len, containing random vectors from the given model
+    """
     vector_sets = []
     for n in range(num):
         temp = []
@@ -64,6 +84,11 @@ def create_random_word_vector_sets(num, model, len):
 
 
 def get_nr_of_metaphors_from_dataframe(df):
+    """
+    counts the number of distinct metaphors using the metaphor_id from the pandas dataframe
+    :param df: given pandas dataframe, retrieved from data/word_sets.csv
+    :return: total number of metaphors given in the dataframe
+    """
     metaphor_ids = []
     str_list = set(df['metaphor_id'].tolist())
     for s in str_list:
@@ -78,6 +103,17 @@ def get_nr_of_metaphors_from_dataframe(df):
 
 
 def execute_experiment(model, model_name, similarity_measure, random_vector_sets, pos_tags=['all', 'ADJ', 'VERB', 'NOUN'], weights=False):
+    """
+    executes the main experiment of this work, calculating the similarity between pairs of word domains,
+    thought to represent metaphorical connections. Saves results to a csv file in results folder
+    :param model: the Word2Vec model to be used
+    :param model_name: name of the model, used to name the csv file
+    :param similarity_measure: kind of distance measure to be used: cosine, manhattan, canberra or euclidian
+    :param random_vector_sets: list of lists, containing random metaphors from the model, used as a baseline
+    :param pos_tags: POS tags to be analyzed
+    :param weights: whether some words should get a double weight
+    :return: a list of words that were not in the vocabulary of the model during the execution of the experiment
+    """
     # read data from word sets input csv
     df = pd.read_csv(WORD_DOMAIN_SETS_FILE)
 

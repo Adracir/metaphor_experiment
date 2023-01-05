@@ -10,6 +10,15 @@ from scipy.stats import pearsonr, spearmanr
 
 
 def preprocess_text_for_word_embedding_creation(filename):
+    """
+    preprocesses raw text from a file into a format that can be transformed in a Word2Vec model
+    steps:
+    1. sentence tokenization
+    2. gensim simple preprocessing (word tokenization and some cleaning)
+    3. pos-tagging and appending tags to the corresponding words with a "_"
+    :param filename: relative path to the file containing the text
+    :return: list containing a list of pos-tagged words for each sentence
+    """
     with open(filename, encoding='utf8') as file:
         s = file.read()
         text_data = []
@@ -31,7 +40,14 @@ def preprocess_text_for_word_embedding_creation(filename):
         return text_data
 
 
-def make_word_emb_model(data, sg=0, vec_dim=100):
+def make_word_emb_model(data, sg=1, vec_dim=100):
+    """
+    method to initialize and train a Word2Vec model with gensim with the given data
+    :param data: list of lists, containing tokenized words in tokenized sentences
+    (as can be generated from raw text with preprocess_text_for_word_embedding_creation(filename))
+    :param sg: if 0, method CBOW is used, if 1, Skipgram
+    :param vec_dim: defines the dimensions of the resulting vectors
+    """
     return gensim.models.Word2Vec(data, min_count=1, sg=sg, vector_size=vec_dim, window=5)
 
 
