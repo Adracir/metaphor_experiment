@@ -3,47 +3,6 @@ import re
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-from gensim.models import Word2Vec
-
-
-# TODO: maybe delete, as results are not so relevant
-def plot_word_counts(model1_filename, model2_filename):
-    df = pd.read_csv("word_sets.csv")
-    domains = set(df['domain'].tolist())
-    model1 = Word2Vec.load(model1_filename)
-    model2 = Word2Vec.load(model2_filename)
-    vocab_len1 = len(model1.wv.index_to_key)
-    vocab_len2 = len(model2.wv.index_to_key)
-    for domain in domains:
-        df = pd.read_csv("word_sets.csv")
-        df = df[df['domain'] == domain]
-        words = df['word_pos'].tolist()
-        print(f'domain: {domain}, words: {str(words)}')
-        frequencies1 = []  # TODO: rename?
-        frequencies2 = []
-        for word in words:
-            frequencies1.append(1-(model1.wv.key_to_index[word]/vocab_len1))
-            frequencies2.append(1-(model2.wv.key_to_index[word]/vocab_len2))
-        x = np.arange(len(words))
-        plt.clf()
-        ax = plt.gca()
-        # TODO: title
-        # TODO: maybe start with a little spacing on the left
-        ax.set_xlim(0, len(words))
-        plt.xticks(x, words, rotation='vertical')
-        plt.xlabel("Words")
-        plt.ylabel("Frequencies")  # TODO: rename?
-        plt.plot(x, frequencies1, 'go', label='model1 frequency')  # TODO: rename?
-        plt.plot(x, frequencies2, 'bo', label='model2 frequency')
-        plt.legend()
-        # sets tight layout (so that nothing is cut out)
-        plt.tight_layout()
-        # save diagram
-        fig = plt.gcf()
-        path = f'results/plots/frequencies_plot_{domain}.png'
-        fig.savefig(path)
-        plt.close(fig)
-        print("plot saved")
 
 
 # TODO: does it make sense to have info from two files in one plot?

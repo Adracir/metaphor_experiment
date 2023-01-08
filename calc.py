@@ -33,7 +33,7 @@ def generate_similarities(A, B, distance_measure):
     for a in A:
         for b in B:
             distances.append(distance(a, b, distance_measure))
-    # normalize distance and subtract from 1 to generate distance
+    # normalize distance and subtract from 1 to generate similarity
     all_similarities = normalize_and_reverse_distances(distances, distance_measure)
     return all_similarities
 
