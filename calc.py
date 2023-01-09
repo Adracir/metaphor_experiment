@@ -8,7 +8,7 @@ def distance(vec1, vec2, distance_measure):
     calculate distance of two word vectors
     :param vec1: vector of first word
     :param vec2: vector of second word
-    :param distance_measure: kind of distance measure to be used: cosine, manhattan, canberra or euclidian
+    :param distance_measure: one of 'cosine', 'manhattan', 'canberra', 'euclidian'. Determines used similarity/distance measure
     :return: result of the distance calculation between the two vectors
     """
     if distance_measure == 'cosine':
@@ -26,7 +26,7 @@ def generate_similarities(A, B, distance_measure):
     calculate similarities between two sets of words
     :param A: source set
     :param B: target set
-    :param distance_measure: kind of distance measure to be used: cosine, manhattan, canberra or euclidian
+    :param distance_measure: one of 'cosine', 'manhattan', 'canberra', 'euclidian'. Determines used similarity/distance measure
     :return: array containing all calculated similarities between all of the values of source and target set
     """
     distances = []
@@ -40,9 +40,9 @@ def generate_similarities(A, B, distance_measure):
 
 def normalize_and_reverse_distances(distances, distance_measure):
     """
-    normalizes distance calculation results and reverses them so that they represent similarities
+    normalize distance calculation results and reverse them so that they represent similarities
     :param distances: array of calculated distances
-    :param distance_measure: used distance measure as string: cosine, manhattan, canberra or euclidian
+    :param distance_measure: one of 'cosine', 'manhattan', 'canberra', 'euclidian'. Determines used similarity/distance measure
     :return: array of similarities between 0 and 1, 1 being most similar
     """
     for i in range(len(distances)):

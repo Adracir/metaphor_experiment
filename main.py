@@ -2,13 +2,13 @@ import csv
 
 import calc
 import plot
-# import embeddings
 import pandas as pd
 import random
 import numpy as np
 import warnings
 from gensim.models import KeyedVectors
 import os
+import re
 
 warnings.filterwarnings(action='ignore')
 
@@ -28,7 +28,7 @@ WORD_DOMAIN_SETS_FILE = "data/word_sets.csv"
 
 def load_word_set_from_csv_by_metaphor_id(df, metaphor_id, pos='all', weights=False):
     """
-    loads set of words from a given pandas dataframe generated from the file data/word_sets.csv
+    load set of words from a given pandas dataframe generated from the file data/word_sets.csv
     :param df: dataframe
     :param metaphor_id: for each set of words, 'metaphor-nr'_'domain-nr', for example 1_1 for the first domain of the first metaphor
     :param pos: pos-tag, 'NOUN', 'VERB', 'ADJ' or 'all'
@@ -48,29 +48,29 @@ def load_word_set_from_csv_by_metaphor_id(df, metaphor_id, pos='all', weights=Fa
     return word_list
 
 
-def vectorize_word_list(word_list, keyedvectors):
+def vectorize_word_list(word_list, keyed_vectors):
     """
-    a helper method to retrieve the corresponding word vectors to a list of words
+    retrieve the corresponding word vectors to a list of words
     :param word_list: list of words
-    :param model: Word2Vec model to retrieve the word vectors from
+    :param keyed_vectors: keyed vectors from a Word2Vec model
     :return: a list of word vectors, a set of words that were not in the vocabulary of the model
     """
     word_vecs = []
     unknown_words = []
     for word in word_list:
         try:
-            word_vecs.append(keyedvectors[word])
+            word_vecs.append(keyed_vectors[word])
         except KeyError:
             unknown_words.append(word)
     # TODO: maybe find better way to analyze unknown words
     return word_vecs, set(unknown_words)
 
 
-def create_random_word_vector_sets(num, keyedvectors, len):
+def create_random_word_vector_sets(num, keyed_vectors, len):
     """
-    helps create random vector sets
+    create random vector sets
     :param num: number of vector sets wanted
-    :param model: Word2Vec model to retrieve the vectors from
+    :param keyed_vectors: keyed vectors from a Word2Vec model
     :param len: number of vectors per set
     :return: list with len num of lists with len len, containing random vectors from the given model
     """
@@ -78,14 +78,14 @@ def create_random_word_vector_sets(num, keyedvectors, len):
     for n in range(num):
         temp = []
         for l in range(len):
-            temp.append(keyedvectors[random.choice(keyedvectors.index_to_key)])
+            temp.append(keyed_vectors[random.choice(keyed_vectors.index_to_key)])
         vector_sets.append(temp)
     return vector_sets
 
 
 def get_nr_of_metaphors_from_dataframe(df):
     """
-    counts the number of distinct metaphors using the metaphor_id from the pandas dataframe
+    count the number of distinct metaphors using the metaphor_id from the pandas dataframe
     :param df: given pandas dataframe, retrieved from data/word_sets.csv
     :return: total number of metaphors given in the dataframe
     """
@@ -104,11 +104,11 @@ def get_nr_of_metaphors_from_dataframe(df):
 
 def execute_experiment(keyed_vectors, model_name, similarity_measure, random_vector_sets, pos_tags=['all', 'ADJ', 'VERB', 'NOUN'], weights=False):
     """
-    executes the main experiment of this work, calculating the similarity between pairs of word domains,
-    thought to represent metaphorical connections. Saves results to a csv file in results folder
-    :param model: the Word2Vec model to be used
-    :param model_name: name of the model, used to name the csv file
-    :param similarity_measure: kind of distance measure to be used: cosine, manhattan, canberra or euclidian
+    execute the main experiment of this work, calculating the similarity between pairs of word domains.
+    Save results to a csv file in results folder
+    :param keyed_vectors: keyed vectors from a Word2Vec model
+    :param model_name: name of the Word2Vec model, used to name the csv file
+    :param similarity_measure: one of 'cosine', 'manhattan', 'canberra', 'euclidian'. Determines used similarity/distance measure
     :param random_vector_sets: list of lists, containing random metaphors from the model, used as a baseline
     :param pos_tags: POS tags to be analyzed
     :param weights: whether some words should get a double weight
@@ -162,8 +162,75 @@ def execute_experiment(keyed_vectors, model_name, similarity_measure, random_vec
     return set(unknown_words)
 
 
+def create_result_summary():
+    """
+    create a summary csv file from all existing results, containing maximum and minimum as well as mean values for
+    the different modalities.
+    """
+    # iterate all relevant files (in results, starting with "BL")
+    output_file_path = 'results/summary_BL_results.csv'
+    with open(output_file_path, mode='w', newline='') as output_file:
+        writer = csv.writer(output_file, delimiter=',')
+        writer.writerow(['Baseline', 'Korpus', 'Gewichtet', 'Methode', 'POS', 'Art des Werts', 'Metapher', 'Wert', 'Baseline-Wert', 'Test-Stat', 'P-Value'])
+    directory = 'results'
+    baseline = 'new'
+    pos_arr = ['all', 'ADJ', 'VERB', 'NOUN']
+    for filename in os.listdir(directory):
+        f = os.path.join(directory, filename)
+        # checking if it is a gutenberg index file
+        # TODO: change, so that there is only one baseline?
+        if os.path.isfile(f) and re.match('BL-.*', filename):
+            # extract important info from filename (corpus, distance-measure, weighted/unweighted)
+            splitted_infos = filename.split('_')
+            corpus = splitted_infos[1]
+            distance_measure = splitted_infos[4]
+            weighted = "Ja" if splitted_infos[6] == "weighted" else "Nein"
+            # read csv with pd:
+            df = pd.read_csv(f)
+            # write to new csv file:
+            # iterating POS
+            for pos in pos_arr:
+                pos_df = df[df['pos'] == pos]
+                metaphor_names = pos_df['metaphor-name'].tolist()
+                metaphor_numbers = pos_df['metaphor-id'].tolist()
+                similarities = pos_df['mean_similarity'].tolist()
+                baseline_performance = pos_df['baseline_performance'].tolist()
+                test_statistic = pos_df['test_statistic'].tolist()
+                p_value = pos_df['p_value'].tolist()
+                # all info in line for max & min test stat
+                # TODO: maybe eliminate test stat
+                i_max_test_stat = test_statistic.index(max(test_statistic))
+                i_min_test_stat = test_statistic.index(min(test_statistic))
+                # all info in line for max & min mean_similarity
+                i_max_sim = similarities.index(max(similarities))
+                i_min_sim = similarities.index(min(similarities))
+                # all info for mean
+                with open(output_file_path, mode='a', newline='') as output_file:
+                    writer = csv.writer(output_file, delimiter=',')
+                    writer.writerow([baseline, corpus, weighted, distance_measure, pos, 'max (Test Stat)',
+                                     f'{metaphor_numbers[i_max_test_stat]} {metaphor_names[i_max_test_stat]}',
+                                     similarities[i_max_test_stat], baseline_performance[i_max_test_stat],
+                                     test_statistic[i_max_test_stat], p_value[i_max_test_stat]])
+                    writer.writerow([baseline, corpus, weighted, distance_measure, pos, 'min (Test Stat)',
+                                     f'{metaphor_numbers[i_min_test_stat]} {metaphor_names[i_min_test_stat]}',
+                                     similarities[i_min_test_stat], baseline_performance[i_min_test_stat],
+                                     test_statistic[i_min_test_stat], p_value[i_min_test_stat]])
+                    writer.writerow([baseline, corpus, weighted, distance_measure, pos, 'max (similarity)',
+                                     f'{metaphor_numbers[i_max_sim]} {metaphor_names[i_max_sim]}',
+                                     similarities[i_max_sim], baseline_performance[i_max_sim],
+                                     test_statistic[i_max_sim], p_value[i_max_sim]])
+                    writer.writerow([baseline, corpus, weighted, distance_measure, pos, 'min (similarity)',
+                                     f'{metaphor_numbers[i_min_sim]} {metaphor_names[i_min_sim]}',
+                                     similarities[i_min_sim], baseline_performance[i_min_sim],
+                                     test_statistic[i_min_sim], p_value[i_min_sim]])
+                    writer.writerow([baseline, corpus, weighted, distance_measure, pos, 'mean',
+                                     '',
+                                     np.mean(similarities), np.mean(baseline_performance),
+                                     np.mean(test_statistic), np.mean(p_value)])
+
+
 if __name__ == '__main__':
-    keyed_vectors1 = KeyedVectors.load("models/word2vec_gutenberg_1-8000u16001-26000_skipgram.wordvectors", mmap='r')
+    '''keyed_vectors1 = KeyedVectors.load("models/word2vec_gutenberg_1-8000u16001-26000_skipgram.wordvectors", mmap='r')
     keyed_vectors2 = KeyedVectors.load("models/word2vec_wiki_1-200000_skipgram.wordvectors", mmap='r')
     # generate one large set of random vectors per model for all calculations
     # random_vector_sets = create_random_word_vector_sets(250, keyed_vectors, 24)
@@ -208,10 +275,12 @@ if __name__ == '__main__':
                            weights=True)
     execute_experiment(keyed_vectors2, 'BL-word2vec_wiki_1-200000_skipgram', random_vector_sets=random_vector_sets2, similarity_measure='canberra',
                            weights=True)
-    print("Canberra done")
-    '''for pos in ["all", "ADJ", "VERB", "NOUN"]:
-        plot.output_to_plot('results/word2vec_gutenberg_1-8000u16001-26000_skipgram_euclidian_all-ADJ-VERB-NOUN_results.csv', pos=pos)
-        plot.output_to_plot('results/word2vec_gutenberg_1-8000u16001-26000_skipgram_euclidian_all-ADJ-VERB-NOUN_weighted_results.csv', pos=pos)
-        plot.output_to_plot('results/word2vec_wiki_1-200000_skipgram_euclidian_all-ADJ-VERB-NOUN_weighted_results.csv', pos=pos)
-        plot.output_to_plot('results/word2vec_wiki_1-200000_skipgram_euclidian_all-ADJ-VERB-NOUN_results.csv', pos=pos)'''
+    print("Canberra done")'''
+    for measure in ["cosine", "canberra", "euclidian", "manhattan"]:
+        for pos in ["all", "ADJ", "VERB", "NOUN"]:
+            plot.output_to_plot(f'results/BL-word2vec_gutenberg_1-8000u16001-26000_skipgram_{measure}_all-ADJ-VERB-NOUN_results.csv', pos=pos)
+            plot.output_to_plot(f'results/BL-word2vec_gutenberg_1-8000u16001-26000_skipgram_{measure}_all-ADJ-VERB-NOUN_weighted_results.csv', pos=pos)
+            plot.output_to_plot(f'results/BL-word2vec_wiki_1-200000_skipgram_{measure}_all-ADJ-VERB-NOUN_weighted_results.csv', pos=pos)
+            plot.output_to_plot(f'results/BL-word2vec_wiki_1-200000_skipgram_{measure}_all-ADJ-VERB-NOUN_results.csv', pos=pos)
+
 

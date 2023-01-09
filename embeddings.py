@@ -1,8 +1,8 @@
 
 import calc
 import pandas as pd
-from nltk.tokenize import sent_tokenize, word_tokenize
-from nltk.tag import pos_tag_sents, pos_tag
+from nltk.tokenize import sent_tokenize
+from nltk.tag import pos_tag_sents
 import gensim
 import gensim.utils as gu
 from gensim.models import Word2Vec, KeyedVectors
@@ -11,8 +11,7 @@ from scipy.stats import pearsonr, spearmanr
 
 def preprocess_text_for_word_embedding_creation(filename):
     """
-    preprocesses raw text from a file into a format that can be transformed in a Word2Vec model
-    steps:
+    preprocess raw text from a file into a format that can be transformed in a Word2Vec model:
     1. sentence tokenization
     2. gensim simple preprocessing (word tokenization and some cleaning)
     3. pos-tagging and appending tags to the corresponding words with a "_"
@@ -42,7 +41,7 @@ def preprocess_text_for_word_embedding_creation(filename):
 
 def make_word_emb_model(data, sg=1, vec_dim=100):
     """
-    method to initialize and train a Word2Vec model with gensim with the given data
+    initialize and train a Word2Vec model with gensim from the given data
     :param data: list of lists, containing tokenized words in tokenized sentences
     (as can be generated from raw text with preprocess_text_for_word_embedding_creation(filename))
     :param sg: if 0, method CBOW is used, if 1, Skipgram
@@ -53,7 +52,7 @@ def make_word_emb_model(data, sg=1, vec_dim=100):
 
 def evaluate_embeddings(keyed_vectors, distance_measure='cosine'):
     """
-    method to print out the evaluation of a given model in correlation (Pearson and Spearman) to a human-based list of
+    print the evaluation of a given model in correlation (Pearson and Spearman) to a human-based list of
     words (based on Rubenstein, H., & Goodenough, J. (1965). Contextual correlates of synonymy. Commun. ACM, 8, 627–633.
     https://doi.org/10.1145/365628.365657)
     For a well-functioning model, the first value is expected to be as high as possible, the pvalue is expected to be
@@ -75,10 +74,11 @@ def evaluate_embeddings(keyed_vectors, distance_measure='cosine'):
     print(spearmanr(gold_standard_relatedness, embedding_relatedness))
 
 
-# data = preprocess_text_for_word_embedding_creation('data/wiki/cleaned_texts_from_1_to_3000.txt')
+data = preprocess_text_for_word_embedding_creation('data/wiki/cleaned_texts_from_1_to_3000.txt')
+print(data)
 # print('sents preprocessed')
 # model = make_word_emb_model(data, sg=1)
-keyed_vectors = KeyedVectors.load('models/word2vec_gutenberg_1-8000u16001-26000_skipgram.wordvectors', mmap='r')
+# keyed_vectors = KeyedVectors.load('models/word2vec_gutenberg_1-8000u16001-26000_skipgram.wordvectors', mmap='r')
 '''model = Word2Vec.load("models/word2vec_wiki_1-3000_skipgram_better-preprocessing.model")
 sents = preprocess_text_for_word_embedding_creation('data/wiki/cleaned_texts_from_1_to_10000.txt')
 print('sents preprocessed')
