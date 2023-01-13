@@ -13,7 +13,7 @@ def output_to_plot(filename, pos="all"):
     # fetch csv file by filename and save useful info in lists
     df = pd.read_csv(filename)
     pos_df = df[df['pos'] == pos]
-    metaphor_names = pos_df['metaphor-name'].tolist()
+    metaphor_names = pos_df['metaphor_name'].tolist()
     similarities = pos_df['mean_similarity'].tolist()
     baseline_performance = pos_df['baseline_performance'].tolist()
     test_statistic = pos_df['test_statistic'].tolist()

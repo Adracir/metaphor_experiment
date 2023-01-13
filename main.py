@@ -121,7 +121,7 @@ def execute_experiment(keyed_vectors, model_name, similarity_measure, random_vec
     output_file_path = f'results/{model_name}_{similarity_measure}_{"-".join(pos_tags)}{"_weighted_" if weights else "_"}results.csv'
     with open(output_file_path, mode='w', newline='') as output_file:
         writer = csv.writer(output_file, delimiter=',')
-        writer.writerow(['metaphor-id', 'metaphor-name', 'pos', 'mean_similarity', 'baseline_performance', 'test_statistic', 'p_value'])
+        writer.writerow(['metaphor_id', 'metaphor_name', 'pos', 'mean_similarity', 'baseline_performance', 'test_statistic', 'p_value'])
 
     unknown_words = []
     for pos in pos_tags:
@@ -177,7 +177,7 @@ def create_result_summary():
     pos_arr = ['all', 'ADJ', 'VERB', 'NOUN']
     for filename in os.listdir(directory):
         f = os.path.join(directory, filename)
-        # checking if it is a gutenberg index file
+        # checking if it is a relevant file
         # TODO: change, so that there is only one baseline?
         if os.path.isfile(f) and re.match('BL-.*', filename):
             # extract important info from filename (corpus, distance-measure, weighted/unweighted)
@@ -191,8 +191,8 @@ def create_result_summary():
             # iterating POS
             for pos in pos_arr:
                 pos_df = df[df['pos'] == pos]
-                metaphor_names = pos_df['metaphor-name'].tolist()
-                metaphor_numbers = pos_df['metaphor-id'].tolist()
+                metaphor_names = pos_df['metaphor_name'].tolist()
+                metaphor_numbers = pos_df['metaphor_id'].tolist()
                 similarities = pos_df['mean_similarity'].tolist()
                 baseline_performance = pos_df['baseline_performance'].tolist()
                 test_statistic = pos_df['test_statistic'].tolist()
@@ -236,51 +236,18 @@ if __name__ == '__main__':
     # random_vector_sets = create_random_word_vector_sets(250, keyed_vectors, 24)
     # rvs = np.asarray(random_vector_sets)
     # np.save('data/gutenberg_random_vector_sets.npy', rvs)
-    random_vector_sets1 = np.load('data/gutenberg_random_vector_sets.npy')
-    random_vector_sets2 = np.load('data/wiki_random_vector_sets.npy')
-    # TODO: regenerate results
-    execute_experiment(keyed_vectors1, 'BL-word2vec_gutenberg_1-8000u16001-26000_skipgram', random_vector_sets=random_vector_sets1, similarity_measure='cosine',
-                           weights=False)
-    execute_experiment(keyed_vectors2, 'BL-word2vec_wiki_1-200000_skipgram', random_vector_sets=random_vector_sets2,
+    # random_vector_sets1 = np.load('data/gutenberg_random_vector_sets.npy')
+    # random_vector_sets2 = np.load('data/wiki_random_vector_sets.npy')
+    random_vector_sets1 = create_random_word_vector_sets(100, keyed_vectors1, 24)
+    random_vector_sets2 = create_random_word_vector_sets(100, keyed_vectors2, 24)
+    execute_experiment(keyed_vectors1, 'word2vec_gutenberg_1-8000u16001-26000_skipgram', random_vector_sets=random_vector_sets1, similarity_measure='cosine',
+                           weights=True)
+    execute_experiment(keyed_vectors2, 'word2vec_wiki_1-200000_skipgram', random_vector_sets=random_vector_sets2,
                        similarity_measure='cosine',
-                       weights=False)
-    execute_experiment(keyed_vectors1, 'BL-word2vec_gutenberg_1-8000u16001-26000_skipgram', random_vector_sets=random_vector_sets1, similarity_measure='cosine',
-                           weights=True)
-    execute_experiment(keyed_vectors2, 'BL-word2vec_wiki_1-200000_skipgram', random_vector_sets=random_vector_sets2, similarity_measure='cosine',
-                           weights=True)
-    print("Cosine done")
-    execute_experiment(keyed_vectors1, 'BL-word2vec_gutenberg_1-8000u16001-26000_skipgram', random_vector_sets=random_vector_sets1, similarity_measure='euclidian',
-                           weights=False)
-    execute_experiment(keyed_vectors2, 'BL-word2vec_wiki_1-200000_skipgram', random_vector_sets=random_vector_sets2, similarity_measure='euclidian',
-                           weights=False)
-    execute_experiment(keyed_vectors1, 'BL-word2vec_gutenberg_1-8000u16001-26000_skipgram', random_vector_sets=random_vector_sets1, similarity_measure='euclidian',
-                           weights=True)
-    execute_experiment(keyed_vectors2, 'BL-word2vec_wiki_1-200000_skipgram', random_vector_sets=random_vector_sets2, similarity_measure='euclidian',
-                           weights=True)
-    print("Euclidian done")
-    execute_experiment(keyed_vectors1, 'BL-word2vec_gutenberg_1-8000u16001-26000_skipgram', random_vector_sets=random_vector_sets1, similarity_measure='manhattan',
-                           weights=False)
-    execute_experiment(keyed_vectors2, 'BL-word2vec_wiki_1-200000_skipgram', random_vector_sets=random_vector_sets2, similarity_measure='manhattan',
-                           weights=False)
-    execute_experiment(keyed_vectors1, 'BL-word2vec_gutenberg_1-8000u16001-26000_skipgram', random_vector_sets=random_vector_sets1, similarity_measure='manhattan',
-                           weights=True)
-    execute_experiment(keyed_vectors2, 'BL-word2vec_wiki_1-200000_skipgram', random_vector_sets=random_vector_sets2, similarity_measure='manhattan',
-                           weights=True)
-    print("Manhattan done")
-    execute_experiment(keyed_vectors1, 'BL-word2vec_gutenberg_1-8000u16001-26000_skipgram', random_vector_sets=random_vector_sets1, similarity_measure='canberra',
-                           weights=False)
-    execute_experiment(keyed_vectors2, 'BL-word2vec_wiki_1-200000_skipgram', random_vector_sets=random_vector_sets2, similarity_measure='canberra',
-                           weights=False)
-    execute_experiment(keyed_vectors1, 'BL-word2vec_gutenberg_1-8000u16001-26000_skipgram', random_vector_sets=random_vector_sets1, similarity_measure='canberra',
-                           weights=True)
-    execute_experiment(keyed_vectors2, 'BL-word2vec_wiki_1-200000_skipgram', random_vector_sets=random_vector_sets2, similarity_measure='canberra',
-                           weights=True)
-    print("Canberra done")'''
+                       weights=True)'''
     for measure in ["cosine", "canberra", "euclidian", "manhattan"]:
         for pos in ["all", "ADJ", "VERB", "NOUN"]:
-            plot.output_to_plot(f'results/BL-word2vec_gutenberg_1-8000u16001-26000_skipgram_{measure}_all-ADJ-VERB-NOUN_results.csv', pos=pos)
-            plot.output_to_plot(f'results/BL-word2vec_gutenberg_1-8000u16001-26000_skipgram_{measure}_all-ADJ-VERB-NOUN_weighted_results.csv', pos=pos)
-            plot.output_to_plot(f'results/BL-word2vec_wiki_1-200000_skipgram_{measure}_all-ADJ-VERB-NOUN_weighted_results.csv', pos=pos)
-            plot.output_to_plot(f'results/BL-word2vec_wiki_1-200000_skipgram_{measure}_all-ADJ-VERB-NOUN_results.csv', pos=pos)
-
-
+            plot.output_to_plot(f'results/word2vec_gutenberg_1-8000u16001-26000_skipgram_{measure}_all-ADJ-VERB-NOUN_results.csv', pos=pos)
+            plot.output_to_plot(f'results/word2vec_gutenberg_1-8000u16001-26000_skipgram_{measure}_all-ADJ-VERB-NOUN_weighted_results.csv', pos=pos)
+            plot.output_to_plot(f'results/word2vec_wiki_1-200000_skipgram_{measure}_all-ADJ-VERB-NOUN_weighted_results.csv', pos=pos)
+            plot.output_to_plot(f'results/word2vec_wiki_1-200000_skipgram_{measure}_all-ADJ-VERB-NOUN_results.csv', pos=pos)

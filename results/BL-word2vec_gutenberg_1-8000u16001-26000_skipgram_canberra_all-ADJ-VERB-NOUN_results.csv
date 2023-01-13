@@ -1,4 +1,4 @@
-metaphor-id,metaphor-name,pos,mean_similarity,baseline_performance,test_statistic,p_value
+metaphor_id,metaphor_name,pos,mean_similarity,baseline_performance,test_statistic,p_value
 1,importance is size,all,0.115582920071644,0.16675210956010825,-21.130130526377705,8.939013818109228e-74
 2,active is life,all,0.17919777422659677,0.2034697732821701,-9.787992516975718,4.991431876509941e-21
 3,life is journey,all,0.15196155823375146,0.1651482918344924,-6.628659274475855,7.81074269952698e-11
