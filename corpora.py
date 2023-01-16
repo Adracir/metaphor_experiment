@@ -30,7 +30,6 @@ def preprocess_wiki_dump(begin_at, end_at):
                 elif begin_at <= counter <= end_at:
                     end = time.time()
                     print(f'time taken before start: {end-start} seconds')
-                    # TODO: maybe find better method to parse text than to use ''.join(p_text.itertext())
                     # take only inner text
                     p_text = ''.join(elem.itertext())
 

@@ -12,21 +12,15 @@ import re
 
 warnings.filterwarnings(action='ignore')
 
-# ignores tensorflow warnings and infos
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
-
 WORD_DOMAIN_SETS_FILE = "data/word_sets.csv"
 
 
-# TODO: make requirements.txt,
-#   also find out how to deal with resources that had to be downloaded from nltk in the code
-#   (e.g. nltk.download('universal_tagset'))
 # TODO: unify meta info for all functions,
 #  https://realpython.com/documenting-python-code/#documenting-your-python-code-base-using-docstrings
-# TODO: only allow either KeyedVectors or Word2Vec or Glove model, remove all if-else options regarding this problem
+# TODO: generally break functions in different parts. one function should only do one thing.
 
 
-def load_word_set_from_csv_by_metaphor_id(df, metaphor_id, pos='all', weights=False):
+def load_word_set_from_df_by_metaphor_id(df, metaphor_id, pos='all', weights=False):
     """
     load set of words from a given pandas dataframe generated from the file data/word_sets.csv
     :param df: dataframe
@@ -129,8 +123,8 @@ def execute_experiment(keyed_vectors, model_name, similarity_measure, random_vec
         for i in range(1, get_nr_of_metaphors_from_dataframe(df) + 1):
             # load 2 word sets for metaphor
             metaphor_ids = [f'{i}_1', f'{i}_2']
-            word_set1 = load_word_set_from_csv_by_metaphor_id(df, metaphor_ids[0], pos, weights)
-            word_set2 = load_word_set_from_csv_by_metaphor_id(df, metaphor_ids[1], pos, weights)
+            word_set1 = load_word_set_from_df_by_metaphor_id(df, metaphor_ids[0], pos, weights)
+            word_set2 = load_word_set_from_df_by_metaphor_id(df, metaphor_ids[1], pos, weights)
             df1 = df[(df['metaphor_id'].str.contains(metaphor_ids[0])) | (df['metaphor_id'] == metaphor_ids[0])]
             df2 = df[(df['metaphor_id'].str.contains(metaphor_ids[1])) | (df['metaphor_id'] == metaphor_ids[1])]
             metaphor_name = f'{df1["domain"].tolist()[0]} is {df2["domain"].tolist()[0]}'
@@ -162,6 +156,7 @@ def execute_experiment(keyed_vectors, model_name, similarity_measure, random_vec
     return set(unknown_words)
 
 
+# TODO: decide whether and to which extent to include these files and this code
 def create_result_summary():
     """
     create a summary csv file from all existing results, containing maximum and minimum as well as mean values for
@@ -173,14 +168,13 @@ def create_result_summary():
         writer = csv.writer(output_file, delimiter=',')
         writer.writerow(['Baseline', 'Korpus', 'Gewichtet', 'Methode', 'POS', 'Art des Werts', 'Metapher', 'Wert', 'Baseline-Wert', 'Test-Stat', 'P-Value'])
     directory = 'results'
-    baseline = 'new'
     pos_arr = ['all', 'ADJ', 'VERB', 'NOUN']
     for filename in os.listdir(directory):
         f = os.path.join(directory, filename)
         # checking if it is a relevant file
-        # TODO: change, so that there is only one baseline?
-        if os.path.isfile(f) and re.match('BL-.*', filename):
-            # extract important info from filename (corpus, distance-measure, weighted/unweighted)
+        baseline = 'new' if re.match('BL-.*', filename) else ('old' if re.match('word2vec.*?', filename) else '')
+        if os.path.isfile(f) and baseline:
+            # extract important info from filename (baseline, corpus, distance-measure, weighted/unweighted)
             splitted_infos = filename.split('_')
             corpus = splitted_infos[1]
             distance_measure = splitted_infos[4]
@@ -198,13 +192,12 @@ def create_result_summary():
                 test_statistic = pos_df['test_statistic'].tolist()
                 p_value = pos_df['p_value'].tolist()
                 # all info in line for max & min test stat
-                # TODO: maybe eliminate test stat
                 i_max_test_stat = test_statistic.index(max(test_statistic))
                 i_min_test_stat = test_statistic.index(min(test_statistic))
                 # all info in line for max & min mean_similarity
                 i_max_sim = similarities.index(max(similarities))
                 i_min_sim = similarities.index(min(similarities))
-                # all info for mean
+                # write info in output file
                 with open(output_file_path, mode='a', newline='') as output_file:
                     writer = csv.writer(output_file, delimiter=',')
                     writer.writerow([baseline, corpus, weighted, distance_measure, pos, 'max (Test Stat)',
@@ -223,13 +216,49 @@ def create_result_summary():
                                      f'{metaphor_numbers[i_min_sim]} {metaphor_names[i_min_sim]}',
                                      similarities[i_min_sim], baseline_performance[i_min_sim],
                                      test_statistic[i_min_sim], p_value[i_min_sim]])
+                    # mean values
                     writer.writerow([baseline, corpus, weighted, distance_measure, pos, 'mean',
                                      '',
                                      np.mean(similarities), np.mean(baseline_performance),
                                      np.mean(test_statistic), np.mean(p_value)])
 
 
+def create_result_summary_val_copy(baseline):
+    """
+    unite all results to one csv file, just copying all values
+    """
+    # iterate all relevant files (in results, starting with "BL")
+    output_file_path = 'results/all-values.csv'
+    if not os.path.isfile(output_file_path):
+        with open(output_file_path, mode='w', newline='') as output_file:
+            writer = csv.writer(output_file, delimiter=',')
+            writer.writerow(['Baseline', 'Korpus', 'Gewichtet', 'Methode', 'POS', 'Art des Werts', 'Metapher', 'Wert', 'Baseline-Wert', 'Test-Stat', 'P-Value'])
+    directory = 'results'
+    prefix = 'BL-.*' if baseline=="saved" else 'word2vec.*'
+    for filename in os.listdir(directory):
+        f = os.path.join(directory, filename)
+        # checking if it is a relevant file
+        if os.path.isfile(f) and re.match(prefix, filename) :
+            # extract important info from filename (corpus, distance-measure, weighted/unweighted)
+            splitted_infos = filename.split('_')
+            corpus = splitted_infos[1]
+            distance_measure = splitted_infos[4]
+            weighted = "Ja" if splitted_infos[6] == "weighted" else "Nein"
+            # read csv with pd:
+            df = pd.read_csv(f)
+            # write to new csv file:
+            with open(output_file_path, mode='a', newline='') as output_file:
+                writer = csv.writer(output_file, delimiter=',')
+                for row in df.itertuples():
+                    writer.writerow([baseline, corpus, weighted, distance_measure, row.pos, 'direct',
+                                     f'{row.metaphor_id} {row.metaphor_name}',
+                                     row.mean_similarity, row.baseline_performance,
+                                     row.test_statistic, row.p_value])
+
+
 if __name__ == '__main__':
+    create_result_summary_val_copy("saved")
+    # TODO: push random vector sets? or are they to big?
     '''keyed_vectors1 = KeyedVectors.load("models/word2vec_gutenberg_1-8000u16001-26000_skipgram.wordvectors", mmap='r')
     keyed_vectors2 = KeyedVectors.load("models/word2vec_wiki_1-200000_skipgram.wordvectors", mmap='r')
     # generate one large set of random vectors per model for all calculations
@@ -245,9 +274,10 @@ if __name__ == '__main__':
     execute_experiment(keyed_vectors2, 'word2vec_wiki_1-200000_skipgram', random_vector_sets=random_vector_sets2,
                        similarity_measure='cosine',
                        weights=True)'''
-    for measure in ["cosine", "canberra", "euclidian", "manhattan"]:
+    '''for measure in ["cosine", "canberra", "euclidian", "manhattan"]:
         for pos in ["all", "ADJ", "VERB", "NOUN"]:
-            plot.output_to_plot(f'results/word2vec_gutenberg_1-8000u16001-26000_skipgram_{measure}_all-ADJ-VERB-NOUN_results.csv', pos=pos)
-            plot.output_to_plot(f'results/word2vec_gutenberg_1-8000u16001-26000_skipgram_{measure}_all-ADJ-VERB-NOUN_weighted_results.csv', pos=pos)
-            plot.output_to_plot(f'results/word2vec_wiki_1-200000_skipgram_{measure}_all-ADJ-VERB-NOUN_weighted_results.csv', pos=pos)
-            plot.output_to_plot(f'results/word2vec_wiki_1-200000_skipgram_{measure}_all-ADJ-VERB-NOUN_results.csv', pos=pos)
+            for pref in ["BL-", ""]:
+                plot.output_to_plot(f'results/{pref}word2vec_gutenberg_1-8000u16001-26000_skipgram_{measure}_all-ADJ-VERB-NOUN_results.csv', pos=pos)
+                plot.output_to_plot(f'results/{pref}word2vec_gutenberg_1-8000u16001-26000_skipgram_{measure}_all-ADJ-VERB-NOUN_weighted_results.csv', pos=pos)
+                plot.output_to_plot(f'results/{pref}word2vec_wiki_1-200000_skipgram_{measure}_all-ADJ-VERB-NOUN_weighted_results.csv', pos=pos)
+                plot.output_to_plot(f'results/{pref}word2vec_wiki_1-200000_skipgram_{measure}_all-ADJ-VERB-NOUN_results.csv', pos=pos)'''

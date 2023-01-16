@@ -3,10 +3,14 @@ import calc
 import pandas as pd
 from nltk.tokenize import sent_tokenize
 from nltk.tag import pos_tag_sents
+import nltk
 import gensim
 import gensim.utils as gu
 from gensim.models import Word2Vec, KeyedVectors
 from scipy.stats import pearsonr, spearmanr
+
+
+nltk.download('universal_tagset')
 
 
 def preprocess_text_for_word_embedding_creation(filename):
@@ -23,9 +27,6 @@ def preprocess_text_for_word_embedding_creation(filename):
         text_data = []
         tokenized = []
         print('starting to sent_tokenize')
-        # TODO: test with nltk 3.8
-        # takes a long time in nltk 3.7, that's why I downgraded to nltk 3.6.5 until upgrade is coming
-        # https://github.com/nltk/nltk/issues/3013
         sents = sent_tokenize(s)
         print('starting to simple_preprocess')
         # simple-preprocess sentences using gu (word tokenization, etc.)
@@ -75,11 +76,11 @@ def evaluate_embeddings(keyed_vectors, distance_measure='cosine'):
     print(spearmanr(gold_standard_relatedness, embedding_relatedness))
 
 
-# data = preprocess_text_for_word_embedding_creation('data/wiki/cleaned_texts_from_1_to_3000.txt')
+# data = preprocess_text_for_word_embedding_creation('data/wiki/cleaned_texts_from_1_to_10000.txt')
 # print(data)
 # print('sents preprocessed')
 # model = make_word_emb_model(data, sg=1)
-keyed_vectors = KeyedVectors.load('models/word2vec_gutenberg_1-8000u16001-26000_skipgram.wordvectors', mmap='r')
+# keyed_vectors = KeyedVectors.load('models/word2vec_gutenberg_1-8000u16001-26000_skipgram.wordvectors', mmap='r')
 '''model = Word2Vec.load("models/word2vec_wiki_1-3000_skipgram_better-preprocessing.model")
 sents = preprocess_text_for_word_embedding_creation('data/wiki/cleaned_texts_from_1_to_10000.txt')
 print('sents preprocessed')
@@ -88,4 +89,4 @@ model.train(sents, total_examples=model.corpus_count, epochs=10)
 word_vectors = model.wv
 word_vectors.save('models/word2vec_wiki_1-10000_skipgram.wordvectors')
 '''
-evaluate_embeddings(keyed_vectors)
+# evaluate_embeddings(keyed_vectors)

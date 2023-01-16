@@ -19,11 +19,13 @@ def output_to_plot(filename, pos="all"):
     test_statistic = pos_df['test_statistic'].tolist()
     p_value = pos_df['p_value'].tolist()
     # title
+    # TODO: maybe skip this part by using results as default folder and only defining real filename in param
     filename_parts = re.search('(.*?\/)(.*?)(\..*)', filename)
     file_info = filename_parts.group(2)
+    prefix = 'BL-' if file_info.startswith('BL-') else ''
     splitted_infos = file_info.split('_')
     plt.title(f'Korpus: {splitted_infos[1]}, distance measure: '
-              f'{splitted_infos[4]}, POS: {pos}, weighted: {"yes" if splitted_infos[6] == "weighted" else "no"}')
+              f'{splitted_infos[4]}, POS: {pos}, weighted: {"yes" if splitted_infos[6] == "weighted" else "no"}, Baseline: {"saved" if prefix else "mixed"}')
     # prepare axes
     x = np.arange(len(similarities))
     ax = plt.gca()
@@ -57,7 +59,7 @@ def output_to_plot(filename, pos="all"):
     # save diagram
     fig = plt.gcf()
     fig.set_size_inches(10, 8)
-    path = f'results/plots/{splitted_infos[1]}_{splitted_infos[4]}_{pos}_{"weighted_" if splitted_infos[6] == "weighted" else ""}plot.png'
+    path = f'results/plots/{prefix}{splitted_infos[1]}_{splitted_infos[4]}_{pos}_{"weighted_" if splitted_infos[6] == "weighted" else ""}plot.png'
     fig.savefig(path)
     plt.close(fig)
     print("plot saved")

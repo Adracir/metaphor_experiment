@@ -3,5 +3,7 @@ __pycache__
 data/**
 !data/human_relatedness.csv
 !data/word_sets.csv
+!data/gutenberg_random_vector_sets.npy
+!data/wiki_random_vector_sets.npy
 models
 archive
