@@ -113,9 +113,7 @@ def execute_experiment(keyed_vectors, model_name, similarity_measure, random_vec
 
     # prepare output csv file
     output_file_path = f'results/{model_name}_{similarity_measure}_{"-".join(pos_tags)}{"_weighted_" if weights else "_"}results.csv'
-    with open(output_file_path, mode='w', newline='') as output_file:
-        writer = csv.writer(output_file, delimiter=',')
-        writer.writerow(['metaphor_id', 'metaphor_name', 'pos', 'mean_similarity', 'baseline_performance', 'test_statistic', 'p_value'])
+    write_info_to_csv(output_file_path, ['metaphor_id', 'metaphor_name', 'pos', 'mean_similarity', 'baseline_performance', 'test_statistic', 'p_value'])
 
     unknown_words = []
     for pos in pos_tags:
@@ -150,13 +148,12 @@ def execute_experiment(keyed_vectors, model_name, similarity_measure, random_vec
             test_statistic = ttest[0]
             p_value = ttest[1]
             # write results to csv file
-            with open(output_file_path, mode='a', newline='') as output_file:
-                writer = csv.writer(output_file, delimiter=',')
-                writer.writerow([i, metaphor_name, pos, mean_similarity, random_similarity, test_statistic, p_value])
+            write_info_to_csv(output_file_path, [i, metaphor_name, pos, mean_similarity, random_similarity, test_statistic, p_value], 'a')
     return set(unknown_words)
 
 
 # TODO: decide whether and to which extent to include these files and this code
+# TODO: delete this method and files and create all interpretation from other file (just uniting all results as raw values)
 def create_result_summary():
     """
     create a summary csv file from all existing results, containing maximum and minimum as well as mean values for
@@ -227,14 +224,14 @@ def create_result_summary_val_copy(baseline):
     """
     unite all results to one csv file, just copying all values
     """
-    # iterate all relevant files (in results, starting with "BL")
+    # prepare output file
     output_file_path = 'results/all-values.csv'
     if not os.path.isfile(output_file_path):
-        with open(output_file_path, mode='w', newline='') as output_file:
-            writer = csv.writer(output_file, delimiter=',')
-            writer.writerow(['Baseline', 'Korpus', 'Gewichtet', 'Methode', 'POS', 'Art des Werts', 'Metapher', 'Wert', 'Baseline-Wert', 'Test-Stat', 'P-Value'])
+        write_info_to_csv(output_file_path, ['baseline','corpus','weighted','method','pos','value_type','metaphor',
+                                             'similarity_value','baseline_value','test_stat','p_value'])
     directory = 'results'
     prefix = 'BL-.*' if baseline=="saved" else 'word2vec.*'
+    # iterate all relevant files (in results, starting with prefix)
     for filename in os.listdir(directory):
         f = os.path.join(directory, filename)
         # checking if it is a relevant file
@@ -247,18 +244,87 @@ def create_result_summary_val_copy(baseline):
             # read csv with pd:
             df = pd.read_csv(f)
             # write to new csv file:
-            with open(output_file_path, mode='a', newline='') as output_file:
-                writer = csv.writer(output_file, delimiter=',')
-                for row in df.itertuples():
-                    writer.writerow([baseline, corpus, weighted, distance_measure, row.pos, 'direct',
+            for row in df.itertuples():
+                write_info_to_csv(output_file_path, [baseline, corpus, weighted, distance_measure, row.pos, 'direct',
                                      f'{row.metaphor_id} {row.metaphor_name}',
                                      row.mean_similarity, row.baseline_performance,
-                                     row.test_statistic, row.p_value])
+                                     row.test_statistic, row.p_value], 'a')
+
+
+def confront_results_for_metaphors():
+    """
+    collect relevant info from all results that allow interpretation on the differences between the different metaphors
+    save these values to csv
+    """
+    # prepare output file
+    output_file_path = 'results/metaphor_confront.csv'
+    write_info_to_csv(output_file_path, ['metaphor', 'mean_similarity', 'mean_baseline_mixed', 'mean_baseline_saved',
+                                         'mean_test_stat_mixed', 'mean_test_stat_saved', 'mean_p_value_mixed',
+                                         'mean_p_value_saved', 'amount_pos_sign_mixed', 'amount_pos_sign_saved',
+                                         'amount_pos_insign_mixed', 'amount_pos_insign_saved', 'amount_neg_sign_mixed',
+                                         'amount_neg_sign_saved', 'amount_neg_insign_mixed', 'amount_neg_insign_saved'])
+    # read all_values.csv
+    df = pd.read_csv('results/all-values.csv')
+    # iterate metaphors
+    for metaphor in set(df['metaphor'].tolist()):
+        print(metaphor)
+        # prepare dataframes
+        met_df = df[df['metaphor'] == metaphor]
+        met_df_mixed = met_df[met_df['baseline'] == 'mixed']
+        met_df_saved = met_df[met_df['baseline'] == 'saved']
+        # calculate needed values
+        mean_similarity = np.mean(met_df['similarity_value'].tolist())
+        mean_vals = calculate_mean_values_from_dfs([met_df_mixed, met_df_saved], ['baseline_value', 'test_stat',
+                                                                                  'p_value'])
+        amount_vals = calculate_amounts_from_dfs([met_df_mixed, met_df_saved], ['pos_sign', 'pos_insign', 'neg_sign',
+                                                                                'neg_insign'])
+        write_info_to_csv(output_file_path, [metaphor, mean_similarity] + mean_vals + amount_vals, 'a')
+
+
+# TODO: add docstring to new methods
+# TODO: add confronts for: pos, corpora, methods, weights, baselines
+# TODO: maybe try baseline that references second domain, not first
+def calculate_mean_values_from_dfs(dfs, value_names):
+    value_list = []
+    for value_name in value_names:
+        for df in dfs:
+            value_list.append(np.mean(df[value_name].tolist()))
+    return value_list
+
+
+def calculate_amounts_from_dfs(dfs, amount_names):
+    amounts = []
+    for amount_name in amount_names:
+        for df in dfs:
+            # filter for positive or negative test stats
+            if 'pos' in amount_name:
+                filtered_df = df[df['test_stat'] > 0]
+            else:
+                filtered_df = df[df['test_stat'] < 0]
+            # differentiate significant and insignificant values
+            if 'insign' in amount_name:
+                insign_df = filtered_df[filtered_df['p_value'] > 0.05]
+                amounts.append(len(insign_df.index))
+            else:
+                sign_df = filtered_df[filtered_df['p_value'] < 0.05]
+                amounts.append(len(sign_df.index))
+    return amounts
+
+
+def write_info_to_csv(output_file_path, arr, mode='w'):
+    """
+    write array to csv
+    :param output_file_path: path to which the file should be saved
+    :param arr: containing all row values that should be written
+    :param mode: csv writer mode: 'w' for writing to a new file, 'a' for appending an existing one
+    """
+    with open(output_file_path, mode=mode, newline='') as output_file:
+        writer = csv.writer(output_file, delimiter=',')
+        writer.writerow(arr)
 
 
 if __name__ == '__main__':
-    create_result_summary_val_copy("saved")
-    # TODO: push random vector sets? or are they to big?
+    confront_results_for_metaphors()
     '''keyed_vectors1 = KeyedVectors.load("models/word2vec_gutenberg_1-8000u16001-26000_skipgram.wordvectors", mmap='r')
     keyed_vectors2 = KeyedVectors.load("models/word2vec_wiki_1-200000_skipgram.wordvectors", mmap='r')
     # generate one large set of random vectors per model for all calculations
