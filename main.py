@@ -24,7 +24,8 @@ def load_word_set_from_df_by_metaphor_id(df, metaphor_id, pos='all', weights=Fal
     """
     load set of words from a given pandas dataframe generated from the file data/word_sets.csv
     :param df: dataframe
-    :param metaphor_id: for each set of words, 'metaphor-nr'_'domain-nr', for example 1_1 for the first domain of the first metaphor
+    :param metaphor_id: for each set of words, 'metaphor-nr'_'domain-nr', for example 1_1 for the first domain of the
+    first metaphor
     :param pos: pos-tag, 'NOUN', 'VERB', 'ADJ' or 'all'
     :param weights: should weighted words be double in the set?
     :return: a list of words to which all of the above applies
@@ -60,18 +61,18 @@ def vectorize_word_list(word_list, keyed_vectors):
     return word_vecs, set(unknown_words)
 
 
-def create_random_word_vector_sets(num, keyed_vectors, len):
+def create_random_word_vector_sets(num, keyed_vectors, length):
     """
     create random vector sets
     :param num: number of vector sets wanted
     :param keyed_vectors: keyed vectors from a Word2Vec model
-    :param len: number of vectors per set
-    :return: list with len num of lists with len len, containing random vectors from the given model
+    :param length: number of vectors per set
+    :return: list with (num) lists, each containing (length) random vectors from the given model
     """
     vector_sets = []
     for n in range(num):
         temp = []
-        for l in range(len):
+        for l in range(length):
             temp.append(keyed_vectors[random.choice(keyed_vectors.index_to_key)])
         vector_sets.append(temp)
     return vector_sets
@@ -152,147 +153,131 @@ def execute_experiment(keyed_vectors, model_name, similarity_measure, random_vec
     return set(unknown_words)
 
 
-# TODO: decide whether and to which extent to include these files and this code
-# TODO: delete this method and files and create all interpretation from other file (just uniting all results as raw values)
-def create_result_summary():
-    """
-    create a summary csv file from all existing results, containing maximum and minimum as well as mean values for
-    the different modalities.
-    """
-    # iterate all relevant files (in results, starting with "BL")
-    output_file_path = 'results/summary_BL_results.csv'
-    with open(output_file_path, mode='w', newline='') as output_file:
-        writer = csv.writer(output_file, delimiter=',')
-        writer.writerow(['Baseline', 'Korpus', 'Gewichtet', 'Methode', 'POS', 'Art des Werts', 'Metapher', 'Wert', 'Baseline-Wert', 'Test-Stat', 'P-Value'])
-    directory = 'results'
-    pos_arr = ['all', 'ADJ', 'VERB', 'NOUN']
-    for filename in os.listdir(directory):
-        f = os.path.join(directory, filename)
-        # checking if it is a relevant file
-        baseline = 'new' if re.match('BL-.*', filename) else ('old' if re.match('word2vec.*?', filename) else '')
-        if os.path.isfile(f) and baseline:
-            # extract important info from filename (baseline, corpus, distance-measure, weighted/unweighted)
-            splitted_infos = filename.split('_')
-            corpus = splitted_infos[1]
-            distance_measure = splitted_infos[4]
-            weighted = "Ja" if splitted_infos[6] == "weighted" else "Nein"
-            # read csv with pd:
-            df = pd.read_csv(f)
-            # write to new csv file:
-            # iterating POS
-            for pos in pos_arr:
-                pos_df = df[df['pos'] == pos]
-                metaphor_names = pos_df['metaphor_name'].tolist()
-                metaphor_numbers = pos_df['metaphor_id'].tolist()
-                similarities = pos_df['mean_similarity'].tolist()
-                baseline_performance = pos_df['baseline_performance'].tolist()
-                test_statistic = pos_df['test_statistic'].tolist()
-                p_value = pos_df['p_value'].tolist()
-                # all info in line for max & min test stat
-                i_max_test_stat = test_statistic.index(max(test_statistic))
-                i_min_test_stat = test_statistic.index(min(test_statistic))
-                # all info in line for max & min mean_similarity
-                i_max_sim = similarities.index(max(similarities))
-                i_min_sim = similarities.index(min(similarities))
-                # write info in output file
-                with open(output_file_path, mode='a', newline='') as output_file:
-                    writer = csv.writer(output_file, delimiter=',')
-                    writer.writerow([baseline, corpus, weighted, distance_measure, pos, 'max (Test Stat)',
-                                     f'{metaphor_numbers[i_max_test_stat]} {metaphor_names[i_max_test_stat]}',
-                                     similarities[i_max_test_stat], baseline_performance[i_max_test_stat],
-                                     test_statistic[i_max_test_stat], p_value[i_max_test_stat]])
-                    writer.writerow([baseline, corpus, weighted, distance_measure, pos, 'min (Test Stat)',
-                                     f'{metaphor_numbers[i_min_test_stat]} {metaphor_names[i_min_test_stat]}',
-                                     similarities[i_min_test_stat], baseline_performance[i_min_test_stat],
-                                     test_statistic[i_min_test_stat], p_value[i_min_test_stat]])
-                    writer.writerow([baseline, corpus, weighted, distance_measure, pos, 'max (similarity)',
-                                     f'{metaphor_numbers[i_max_sim]} {metaphor_names[i_max_sim]}',
-                                     similarities[i_max_sim], baseline_performance[i_max_sim],
-                                     test_statistic[i_max_sim], p_value[i_max_sim]])
-                    writer.writerow([baseline, corpus, weighted, distance_measure, pos, 'min (similarity)',
-                                     f'{metaphor_numbers[i_min_sim]} {metaphor_names[i_min_sim]}',
-                                     similarities[i_min_sim], baseline_performance[i_min_sim],
-                                     test_statistic[i_min_sim], p_value[i_min_sim]])
-                    # mean values
-                    writer.writerow([baseline, corpus, weighted, distance_measure, pos, 'mean',
-                                     '',
-                                     np.mean(similarities), np.mean(baseline_performance),
-                                     np.mean(test_statistic), np.mean(p_value)])
-
-
-def create_result_summary_val_copy(baseline):
+def create_result_summary_val_copy(baselines):
     """
     unite all results to one csv file, just copying all values
+    :param baselines: list of baselines to be used, e.g. "saved" (saved random vectors in /data) or "mixed" (created on the
+    fly during the execution of the experiment)
     """
     # prepare output file
     output_file_path = 'results/all-values.csv'
     if not os.path.isfile(output_file_path):
-        write_info_to_csv(output_file_path, ['baseline','corpus','weighted','method','pos','value_type','metaphor',
-                                             'similarity_value','baseline_value','test_stat','p_value'])
+        write_info_to_csv(output_file_path, ['baseline', 'corpus', 'weighted', 'method', 'pos', 'metaphor',
+                                             'similarity_value', 'baseline_value', 'test_stat', 'p_value'])
     directory = 'results'
-    prefix = 'BL-.*' if baseline=="saved" else 'word2vec.*'
-    # iterate all relevant files (in results, starting with prefix)
-    for filename in os.listdir(directory):
-        f = os.path.join(directory, filename)
-        # checking if it is a relevant file
-        if os.path.isfile(f) and re.match(prefix, filename) :
-            # extract important info from filename (corpus, distance-measure, weighted/unweighted)
-            splitted_infos = filename.split('_')
-            corpus = splitted_infos[1]
-            distance_measure = splitted_infos[4]
-            weighted = "Ja" if splitted_infos[6] == "weighted" else "Nein"
-            # read csv with pd:
-            df = pd.read_csv(f)
-            # write to new csv file:
-            for row in df.itertuples():
-                write_info_to_csv(output_file_path, [baseline, corpus, weighted, distance_measure, row.pos, 'direct',
-                                     f'{row.metaphor_id} {row.metaphor_name}',
-                                     row.mean_similarity, row.baseline_performance,
-                                     row.test_statistic, row.p_value], 'a')
+    for baseline in baselines:
+        prefix = 'BL-.*' if baseline=="saved" else 'word2vec.*'
+        # iterate all relevant files (in results, starting with prefix)
+        for filename in os.listdir(directory):
+            f = os.path.join(directory, filename)
+            # checking if it is a relevant file
+            if os.path.isfile(f) and re.match(prefix, filename):
+                # extract important info from filename (corpus, distance-measure, weighted/unweighted)
+                splitted_infos = filename.split('_')
+                corpus = splitted_infos[1]
+                distance_measure = splitted_infos[4]
+                weighted = "Ja" if splitted_infos[6] == "weighted" else "Nein"
+                # read csv with pd:
+                df = pd.read_csv(f)
+                # write to new csv file:
+                for row in df.itertuples():
+                    write_info_to_csv(output_file_path, [baseline, corpus, weighted, distance_measure, row.pos,
+                                                         f'{row.metaphor_id} {row.metaphor_name}',
+                                                         row.mean_similarity, row.baseline_performance,
+                                                         row.test_statistic, row.p_value], 'a')
 
 
-def confront_results_for_metaphors():
+def confront_results_for_one_param(parameter):
     """
-    collect relevant info from all results that allow interpretation on the differences between the different metaphors
-    save these values to csv
+    collect relevant info from all results (results/all-values.csv) that allow closer interpretation of one parameter
+    shaping the values, differentiating values from two different baselines
+    save these infos to csv
+    :param parameter: one of "metaphor", "pos", "corpus", "weighted", "method". Defines parameter from which perspective
+    the results can be analyzed closer
     """
     # prepare output file
-    output_file_path = 'results/metaphor_confront.csv'
-    write_info_to_csv(output_file_path, ['metaphor', 'mean_similarity', 'mean_baseline_mixed', 'mean_baseline_saved',
+    output_file_path = f'results/{parameter}_confront.csv'
+    write_info_to_csv(output_file_path, [parameter, 'mean_similarity', 'mean_baseline_mixed', 'mean_baseline_saved',
                                          'mean_test_stat_mixed', 'mean_test_stat_saved', 'mean_p_value_mixed',
                                          'mean_p_value_saved', 'amount_pos_sign_mixed', 'amount_pos_sign_saved',
                                          'amount_pos_insign_mixed', 'amount_pos_insign_saved', 'amount_neg_sign_mixed',
                                          'amount_neg_sign_saved', 'amount_neg_insign_mixed', 'amount_neg_insign_saved'])
     # read all_values.csv
     df = pd.read_csv('results/all-values.csv')
+    # iterate values for parameters
+    for param_value in set(df[parameter].tolist()):
+        print(param_value)
+        # prepare dataframes
+        filtered_df = df[df[parameter] == param_value]
+        filtered_df_mixed = filtered_df[filtered_df['baseline'] == 'mixed']
+        filtered_df_saved = filtered_df[filtered_df['baseline'] == 'saved']
+        # calculate needed values
+        mean_similarity = np.mean(filtered_df['similarity_value'].tolist())
+        mean_vals = calculate_mean_values_from_dfs([filtered_df_mixed, filtered_df_saved], ['baseline_value', 'test_stat',
+                                                                                  'p_value'])
+        amount_vals = calculate_amounts_from_dfs([filtered_df_mixed, filtered_df_saved], ['pos_sign', 'pos_insign', 'neg_sign',
+                                                                                'neg_insign'])
+        write_info_to_csv(output_file_path, [param_value, mean_similarity] + mean_vals + amount_vals, 'a')
+
+
+# TODO: does this make sense? Generated table is very confusing
+def metaphor_confront_for_one_param(parameter):
+    """
+    analyze different metaphors from the perspective of a parameter, trying to provide the data for an answer on the
+    question: does the parameter have an impact on the results for the different metaphors?
+    save info to csv file
+    :param parameter: one of "corpus", "weighted", "method", "pos"
+    """
+    # prepare output file
+    output_file_path = f'results/{parameter}_metaphor_confront.csv'
+    # read all_values.csv
+    df = pd.read_csv('results/all-values.csv')
+    param_values = set(df[parameter].tolist())
+    to_be_calculated = ['mean_similarity_', 'mean_baseline_', 'mean_test_stat_', 'mean_p_value_', 'amount_pos_sign_',
+                        'amount_pos_insign_', 'amount_neg_sign_', 'amount_neg_insign_']
+    csv_headings = []
+    for calculation in to_be_calculated:
+        for param_value in param_values:
+            csv_headings.append(calculation + param_value)
+
+    write_info_to_csv(output_file_path, ['metaphor'] + csv_headings)
     # iterate metaphors
     for metaphor in set(df['metaphor'].tolist()):
-        print(metaphor)
         # prepare dataframes
-        met_df = df[df['metaphor'] == metaphor]
-        met_df_mixed = met_df[met_df['baseline'] == 'mixed']
-        met_df_saved = met_df[met_df['baseline'] == 'saved']
+        filtered_df = df[df['metaphor'] == metaphor]
+        param_dfs = [filtered_df[filtered_df[parameter] == param_value] for param_value in param_values]
         # calculate needed values
-        mean_similarity = np.mean(met_df['similarity_value'].tolist())
-        mean_vals = calculate_mean_values_from_dfs([met_df_mixed, met_df_saved], ['baseline_value', 'test_stat',
-                                                                                  'p_value'])
-        amount_vals = calculate_amounts_from_dfs([met_df_mixed, met_df_saved], ['pos_sign', 'pos_insign', 'neg_sign',
-                                                                                'neg_insign'])
-        write_info_to_csv(output_file_path, [metaphor, mean_similarity] + mean_vals + amount_vals, 'a')
+        mean_vals = calculate_mean_values_from_dfs(param_dfs, ['similarity_value', 'baseline_value', 'test_stat','p_value'])
+        amount_vals = calculate_amounts_from_dfs(param_dfs, ['pos_sign', 'pos_insign', 'neg_sign', 'neg_insign'])
+        write_info_to_csv(output_file_path, [metaphor] + mean_vals + amount_vals, 'a')
 
 
-# TODO: add docstring to new methods
-# TODO: add confronts for: pos, corpora, methods, weights, baselines
 # TODO: maybe try baseline that references second domain, not first
 def calculate_mean_values_from_dfs(dfs, value_names):
+    """
+    calculate mean values in given pandas dataframes
+    :param dfs: list of dataframes to be analyzed
+    :param value_names: values to be analyzed, should match column name in dataframe
+    :return: list of amounts, sorted by amount_name first, then dataframe
+    """
     value_list = []
     for value_name in value_names:
         for df in dfs:
-            value_list.append(np.mean(df[value_name].tolist()))
+            try:
+                value_list.append(np.mean(df[value_name].tolist()))
+            except KeyError:
+                print(f'Value name {value_name} is not a column in the dataframe')
     return value_list
 
 
 def calculate_amounts_from_dfs(dfs, amount_names):
+    """
+    calculate amount of defined significant/insignificant positive/negative values in given pandas dataframes
+    :param dfs: list of dataframes to be analyzed
+    :param amount_names: should contain "pos" for positive values (test statistic > 0) and "insign" for insignificant
+    values (p-value > 0,05). Else calculate negative and significant value.
+    :return: list of amounts, sorted by amount_name first, then dataframe
+    """
     amounts = []
     for amount_name in amount_names:
         for df in dfs:
@@ -324,7 +309,6 @@ def write_info_to_csv(output_file_path, arr, mode='w'):
 
 
 if __name__ == '__main__':
-    confront_results_for_metaphors()
     '''keyed_vectors1 = KeyedVectors.load("models/word2vec_gutenberg_1-8000u16001-26000_skipgram.wordvectors", mmap='r')
     keyed_vectors2 = KeyedVectors.load("models/word2vec_wiki_1-200000_skipgram.wordvectors", mmap='r')
     # generate one large set of random vectors per model for all calculations

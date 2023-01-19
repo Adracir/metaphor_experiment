@@ -1,0 +1,5 @@
+method;mean_similarity;mean_baseline_mixed;mean_baseline_saved;mean_test_stat_mixed;mean_test_stat_saved;mean_p_value_mixed;mean_p_value_saved;amount_pos_sign_mixed;amount_pos_sign_saved;amount_pos_insign_mixed;amount_pos_insign_saved;amount_neg_sign_mixed;amount_neg_sign_saved;amount_neg_insign_mixed;amount_neg_insign_saved
+cosine;0,389950862;0,350322869;0,348990994;3,909890296;4,094792846;0,033270404;0,030034218;95;95;10;10;51;50;4;5
+euclidian;0,193037836;0,24476662;0,294236742;-8,554211086;-12,77467652;0,10134163;0,00911703;10;2;14;4;112;151;24;3
+manhattan;0,199183613;0,247760846;0,297426703;-7,886697605;-12,03063271;0,125758782;0,007985154;12;4;20;2;104;151;24;3
+canberra;0,119206027;0,122858421;0,141324022;-1,451807027;-3,848650817;0,07201244;0,089339959;56;36;17;9;71;97;16;18
