@@ -113,8 +113,10 @@ def execute_experiment(keyed_vectors, model_name, similarity_measure, random_vec
     df = pd.read_csv(WORD_DOMAIN_SETS_FILE)
 
     # prepare output csv file
-    output_file_path = f'results/{model_name}_{similarity_measure}_{"-".join(pos_tags)}{"_weighted_" if weights else "_"}results.csv'
-    write_info_to_csv(output_file_path, ['metaphor_id', 'metaphor_name', 'pos', 'mean_similarity', 'baseline_performance', 'test_statistic', 'p_value'])
+    output_file_path = f'results/{model_name}_{similarity_measure}_{"-".join(pos_tags)}' \
+                       f'{"_weighted_" if weights else "_"}results.csv'
+    write_info_to_csv(output_file_path, ['metaphor_id', 'metaphor_name', 'pos', 'mean_similarity',
+                                         'baseline_performance', 'test_statistic', 'p_value'])
 
     unknown_words = []
     for pos in pos_tags:
@@ -166,7 +168,7 @@ def create_result_summary_val_copy(baselines):
                                              'similarity_value', 'baseline_value', 'test_stat', 'p_value'])
     directory = 'results'
     for baseline in baselines:
-        prefix = 'BL-.*' if baseline=="saved" else 'word2vec.*'
+        prefix = 'BL-.*' if baseline == "saved" else 'word2vec.*'
         # iterate all relevant files (in results, starting with prefix)
         for filename in os.listdir(directory):
             f = os.path.join(directory, filename)
@@ -176,7 +178,8 @@ def create_result_summary_val_copy(baselines):
                 splitted_infos = filename.split('_')
                 corpus = splitted_infos[1]
                 distance_measure = splitted_infos[4]
-                weighted = "Ja" if splitted_infos[6] == "weighted" else "Nein"
+                # TODO: maybe simplify by renaming files
+                weighted = "weighted" if splitted_infos[6] == "weighted" else "unweighted"
                 # read csv with pd:
                 df = pd.read_csv(f)
                 # write to new csv file:
@@ -197,11 +200,14 @@ def confront_results_for_one_param(parameter):
     """
     # prepare output file
     output_file_path = f'results/{parameter}_confront.csv'
-    write_info_to_csv(output_file_path, [parameter, 'mean_similarity', 'mean_baseline_mixed', 'mean_baseline_saved',
-                                         'mean_test_stat_mixed', 'mean_test_stat_saved', 'mean_p_value_mixed',
-                                         'mean_p_value_saved', 'amount_pos_sign_mixed', 'amount_pos_sign_saved',
-                                         'amount_pos_insign_mixed', 'amount_pos_insign_saved', 'amount_neg_sign_mixed',
-                                         'amount_neg_sign_saved', 'amount_neg_insign_mixed', 'amount_neg_insign_saved'])
+    to_be_calculated = ['mean_baseline_', 'mean_test_stat_', 'mean_p_value_', 'amount_pos_sign_',
+                        'amount_pos_insign_', 'amount_neg_sign_', 'amount_neg_insign_']
+    csv_headings = []
+    baselines = ["saved", "mixed"]
+    for calculation in to_be_calculated:
+        for baseline in baselines:
+            csv_headings.append(calculation + baseline)
+    write_info_to_csv(output_file_path, [parameter, 'mean_similarity'] + csv_headings)
     # read all_values.csv
     df = pd.read_csv('results/all-values.csv')
     # iterate values for parameters
@@ -209,18 +215,16 @@ def confront_results_for_one_param(parameter):
         print(param_value)
         # prepare dataframes
         filtered_df = df[df[parameter] == param_value]
-        filtered_df_mixed = filtered_df[filtered_df['baseline'] == 'mixed']
-        filtered_df_saved = filtered_df[filtered_df['baseline'] == 'saved']
-        # calculate needed values
+        bl_dfs = []
+        for baseline in baselines:
+            bl_dfs.append(filtered_df[filtered_df['baseline'] == baseline])
+        # calculate needed values. mean similarity should be the same, as is independent from baseline
         mean_similarity = np.mean(filtered_df['similarity_value'].tolist())
-        mean_vals = calculate_mean_values_from_dfs([filtered_df_mixed, filtered_df_saved], ['baseline_value', 'test_stat',
-                                                                                  'p_value'])
-        amount_vals = calculate_amounts_from_dfs([filtered_df_mixed, filtered_df_saved], ['pos_sign', 'pos_insign', 'neg_sign',
-                                                                                'neg_insign'])
+        mean_vals = calculate_mean_values_from_dfs(bl_dfs, ['baseline_value', 'test_stat', 'p_value'])
+        amount_vals = calculate_amounts_from_dfs(bl_dfs, ['pos_sign', 'pos_insign', 'neg_sign', 'neg_insign'])
         write_info_to_csv(output_file_path, [param_value, mean_similarity] + mean_vals + amount_vals, 'a')
 
 
-# TODO: does this make sense? Generated table is very confusing
 def metaphor_confront_for_one_param(parameter):
     """
     analyze different metaphors from the perspective of a parameter, trying to provide the data for an answer on the
@@ -252,7 +256,6 @@ def metaphor_confront_for_one_param(parameter):
         write_info_to_csv(output_file_path, [metaphor] + mean_vals + amount_vals, 'a')
 
 
-# TODO: maybe try baseline that references second domain, not first
 def calculate_mean_values_from_dfs(dfs, value_names):
     """
     calculate mean values in given pandas dataframes
@@ -309,21 +312,28 @@ def write_info_to_csv(output_file_path, arr, mode='w'):
 
 
 if __name__ == '__main__':
-    '''keyed_vectors1 = KeyedVectors.load("models/word2vec_gutenberg_1-8000u16001-26000_skipgram.wordvectors", mmap='r')
-    keyed_vectors2 = KeyedVectors.load("models/word2vec_wiki_1-200000_skipgram.wordvectors", mmap='r')
+    # load word vectors
+    # keyed_vectors1 = KeyedVectors.load("models/word2vec_gutenberg_1-8000u16001-26000_skipgram.wordvectors", mmap='r')
+    # keyed_vectors2 = KeyedVectors.load("models/word2vec_wiki_1-200000_skipgram.wordvectors", mmap='r')
     # generate one large set of random vectors per model for all calculations
     # random_vector_sets = create_random_word_vector_sets(250, keyed_vectors, 24)
     # rvs = np.asarray(random_vector_sets)
     # np.save('data/gutenberg_random_vector_sets.npy', rvs)
+    # load saved random vectors
     # random_vector_sets1 = np.load('data/gutenberg_random_vector_sets.npy')
     # random_vector_sets2 = np.load('data/wiki_random_vector_sets.npy')
-    random_vector_sets1 = create_random_word_vector_sets(100, keyed_vectors1, 24)
-    random_vector_sets2 = create_random_word_vector_sets(100, keyed_vectors2, 24)
-    execute_experiment(keyed_vectors1, 'word2vec_gutenberg_1-8000u16001-26000_skipgram', random_vector_sets=random_vector_sets1, similarity_measure='cosine',
-                           weights=True)
-    execute_experiment(keyed_vectors2, 'word2vec_wiki_1-200000_skipgram', random_vector_sets=random_vector_sets2,
-                       similarity_measure='cosine',
-                       weights=True)'''
+    # create random vectors
+    # random_vector_sets1 = create_random_word_vector_sets(100, keyed_vectors1, 24)
+    # random_vector_sets2 = create_random_word_vector_sets(100, keyed_vectors2, 24)
+    # calculate all possible results
+    '''for measure in ["cosine", "canberra", "euclidian", "manhattan"]:
+        for weight in [True, False]:
+            execute_experiment(keyed_vectors1, 'word2vec_gutenberg_1-8000u16001-26000_skipgram',
+                               random_vector_sets=random_vector_sets1, similarity_measure=measure, weights=weight)
+            execute_experiment(keyed_vectors2, 'word2vec_wiki_1-200000_skipgram', random_vector_sets=random_vector_sets2,
+                               similarity_measure=measure, weights=weight)
+            print(f'measure {measure}, weight {weight} done')'''
+    # visualize all results in plots
     '''for measure in ["cosine", "canberra", "euclidian", "manhattan"]:
         for pos in ["all", "ADJ", "VERB", "NOUN"]:
             for pref in ["BL-", ""]:
@@ -331,3 +341,8 @@ if __name__ == '__main__':
                 plot.output_to_plot(f'results/{pref}word2vec_gutenberg_1-8000u16001-26000_skipgram_{measure}_all-ADJ-VERB-NOUN_weighted_results.csv', pos=pos)
                 plot.output_to_plot(f'results/{pref}word2vec_wiki_1-200000_skipgram_{measure}_all-ADJ-VERB-NOUN_weighted_results.csv', pos=pos)
                 plot.output_to_plot(f'results/{pref}word2vec_wiki_1-200000_skipgram_{measure}_all-ADJ-VERB-NOUN_results.csv', pos=pos)'''
+    # add results to summary all-values.csv file
+    # create_result_summary_val_copy(["two"])
+    # generate confront files
+    # for param in ["metaphor", "pos", "corpus", "weighted", "method"]:
+       # confront_results_for_one_param(param)
