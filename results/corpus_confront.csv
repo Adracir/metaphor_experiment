@@ -1,3 +1,0 @@
-corpus;mean_similarity;mean_baseline_mixed;mean_baseline_saved;mean_test_stat_mixed;mean_test_stat_saved;mean_p_value_mixed;mean_p_value_saved;amount_pos_sign_mixed;amount_pos_sign_saved;amount_pos_insign_mixed;amount_pos_insign_saved;amount_neg_sign_mixed;amount_neg_sign_saved;amount_neg_insign_mixed;amount_neg_insign_saved
-gutenberg;0,208223117;0,262421979;0,291133967;-9,485646534;-12,19053217;0,044846466;0,023332678;28;21;17;10;252;281;23;8
-wiki;0,242466052;0,220432399;0,249855263;2,494233823;-0,089051427;0,121345162;0,044905502;145;116;44;15;86;168;45;21

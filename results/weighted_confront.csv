@@ -1,3 +1,0 @@
-weighted,mean_similarity,mean_baseline_mixed,mean_baseline_saved,mean_test_stat_mixed,mean_test_stat_saved,mean_p_value_mixed,mean_p_value_saved,amount_pos_sign_mixed,amount_pos_sign_saved,amount_pos_insign_mixed,amount_pos_insign_saved,amount_neg_sign_mixed,amount_neg_sign_saved,amount_neg_insign_mixed,amount_neg_insign_saved
-weighted,0.22628897767693418,0.24428238876752592,0.27089427975554276,-3.9803389899300923,-6.445548187737748,0.08063766206009641,0.025416402557739498,83,70,32,12,176,226,29,12
-unweighted,0.22440019145427711,0.23857198893528686,0.2700949508124874,-3.011073720743891,-5.834035410120673,0.08555396586820693,0.04282177831383484,90,67,29,13,162,223,39,17

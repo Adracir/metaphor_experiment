@@ -1,0 +1,3 @@
+corpus;mean_similarity;mean_baseline_mixedBL;mean_baseline_savedBL;mean_test_stat_mixedBL;mean_test_stat_savedBL;mean_p_value_mixedBL;mean_p_value_savedBL;amount_pos_sign_mixedBL;amount_pos_sign_savedBL;amount_pos_insign_mixedBL;amount_pos_insign_savedBL;amount_neg_sign_mixedBL;amount_neg_sign_savedBL;amount_neg_insign_mixedBL;amount_neg_insign_savedBL
+gutenberg;0,208223117;0,262421979;0,291133967;-9,485646534;-12,19053217;0,044846466;0,023332678;28;21;17;10;252;281;23;8
+wiki;0,242466052;0,220432399;0,249855263;2,494233823;-0,089051427;0,121345162;0,044905502;145;116;44;15;86;168;45;21
