@@ -4,6 +4,8 @@ import time
 import os
 from os.path import exists
 
+import utils
+
 root = 'C:/Users/adrac/Documents/Uni/Embeddings/metaphor_experiment'
 WIKI_DUMP = "/data/wiki/enwiki-latest-pages-articles-multistream.xml"
 namespaces = {'wiki_ns': 'http://www.mediawiki.org/xml/export-0.10/'}
@@ -32,57 +34,68 @@ def preprocess_wiki_dump(begin_at, end_at):
                     print(f'time taken before start: {end-start} seconds')
                     # take only inner text
                     p_text = ''.join(elem.itertext())
-
-                    # ignores whole page if it starts with #REDIRECT or {{wiktionary (only redirects to other pages)
-                    if not re.match('(#REDIRECT)|(\{\{wiktionary)|(\[\[Wikipedia:Free_On-line_Dictionary_of_Computing/symbols)', p_text):
-                        # removes &quot; (quotation mark)
-                        p_text = re.sub('&quot;', '', p_text)
-                        # removes stuff inside {||} (tables)
-                        p_text = re.sub('\{\|[\s\S]*?\|\}', '', p_text)
-                        # removes stuff inside {{}}(references, meta)
-                        p_text = re.sub('\{\{[\s\S]*?\}\}', '', p_text)
-                        # accepts content left over from nested brackets, but cleans up the brackets themselves
-                        p_text = re.sub('\{\{|\}\}', '', p_text)
-                        # removes '' (marks text as italic) and ''' '''(marks text as bold)
-                        p_text = re.sub('(\'){2,3}', '', p_text)
-                        # removes stuff inside [[Category: ]] (links to wiki categories)
-                        p_text = re.sub('\[\[Category\:.*?\]\]', '', p_text)
-                        # removes stuff inside [[File:]] (image metadata & image description)
-                        p_text = re.sub('\[\[File:.*?\|+.*(\]\])+', '', p_text)
-                        # removes remaining square brackets and chooses what content to keep
-                        p_text = re.sub("(\[\[.[^\[\]]*?\|)(.*?)(\]\])", repl, p_text)
-                        # clean up all [[ ]] that are left
-                        p_text = re.sub("\[\[|\]\]", "", p_text)
-                        # removes leftovers from tables
-                        p_text = re.sub('\|.[^ \n]*', '', p_text)
-                        # clean up also links in [ ]
-                        p_text = re.sub('\[.*?\]', '', p_text)
-                        # br-tags (makes next step less complex, especially for long lists
-                        p_text = re.sub('<br>', ' ', p_text)
-                        # TODO: too complex? decomplexify? :D
-                        # removes remaining html tags and their content
-                        p_text = re.sub('(<\w+?.[^\/]*?>[\s\S]*?<\/\w+?>)|(<\w+?.*?\/>)', '', p_text)
-                        # removes html comments
-                        p_text = re.sub('<!--.*?-->', '', p_text)
-                        # removes stars
-                        p_text = re.sub('\*', '', p_text)
-                        # removes newlines
-                        p_text = re.sub('\n', ' ', p_text)
-                        cleaned_texts.append(p_text)
-                        print(f'text {counter} cleaned')
-                    else:
-                        print(f'text {counter} ignored')
+                    p_text = clean_wiki_text_from_one_page(p_text, counter)
+                    cleaned_texts.append(p_text)
                 else:
                     print(f'stopped at text {counter}')
                     break
     # save cleaned text
-    file_name = f'cleaned_texts_from_{begin_at}_to_{end_at}.txt'
-    text_file = open(root + '/data/wiki/' + file_name, 'w', encoding="utf-8")
+    filename = f'cleaned_texts_from_{begin_at}_to_{end_at}.txt'
+    filepath = root + '/data/wiki/' + filename
     cleaned_text_string = "".join(cleaned_texts)
-    text_file.write(cleaned_text_string)
-    text_file.close()
-    print(f'saved {len(cleaned_texts)} cleaned texts to file {file_name}')
+    utils.save_string_to_txt_file(filepath, cleaned_text_string)
+    print(f'saved {len(cleaned_texts)} cleaned texts to file {filename}')
     return cleaned_text_string
+
+
+def clean_wiki_text_from_one_page(p_text, counter):
+    """
+    clean the text from a wikipedia page from metadata, so that pure text remains
+    :param p_text: page's text as read from dump
+    :param counter:
+    :return: the cleaned text
+    """
+    # ignores whole page if it starts with #REDIRECT or {{wiktionary (only redirects to other pages)
+    if not re.match('(#REDIRECT)|(\{\{wiktionary)|(\[\[Wikipedia:Free_On-line_Dictionary_of_Computing/symbols)',
+                    p_text):
+        # removes &quot; (quotation mark)
+        p_text = re.sub('&quot;', '', p_text)
+        # removes stuff inside {||} (tables)
+        p_text = re.sub('\{\|[\s\S]*?\|\}', '', p_text)
+        # removes stuff inside {{}}(references, meta)
+        p_text = re.sub('\{\{[\s\S]*?\}\}', '', p_text)
+        # accepts content left over from nested brackets, but cleans up the brackets themselves
+        p_text = re.sub('\{\{|\}\}', '', p_text)
+        # removes '' (marks text as italic) and ''' '''(marks text as bold)
+        p_text = re.sub('(\'){2,3}', '', p_text)
+        # removes stuff inside [[Category: ]] (links to wiki categories)
+        p_text = re.sub('\[\[Category\:.*?\]\]', '', p_text)
+        # removes stuff inside [[File:]] (image metadata & image description)
+        p_text = re.sub('\[\[File:.*?\|+.*(\]\])+', '', p_text)
+        # removes remaining square brackets and chooses what content to keep
+        p_text = re.sub("(\[\[.[^\[\]]*?\|)(.*?)(\]\])", repl, p_text)
+        # clean up all [[ ]] that are left
+        p_text = re.sub("\[\[|\]\]", "", p_text)
+        # removes leftovers from tables
+        p_text = re.sub('\|.[^ \n]*', '', p_text)
+        # clean up also links in [ ]
+        p_text = re.sub('\[.*?\]', '', p_text)
+        # br-tags (makes next step less complex, especially for long lists
+        p_text = re.sub('<br>', ' ', p_text)
+        # TODO: too complex? decomplexify? :D
+        # removes remaining html tags and their content
+        p_text = re.sub('(<\w+?.[^\/]*?>[\s\S]*?<\/\w+?>)|(<\w+?.*?\/>)', '', p_text)
+        # removes html comments
+        p_text = re.sub('<!--.*?-->', '', p_text)
+        # removes stars
+        p_text = re.sub('\*', '', p_text)
+        # removes newlines
+        p_text = re.sub('\n', ' ', p_text)
+        print(f'text {counter} cleaned')
+        return p_text
+    else:
+        print(f'text {counter} ignored')
+    return ''
 
 
 def repl(matchobj):
@@ -179,41 +192,61 @@ def preprocess_gutenberg_dump(begin_at, end_at):
     cleaned_texts = []
     # iterates all gutenberg txt files in the given range of possible indices
     for i in range(begin_at, end_at):
-        x = [int(a) for a in str(i)]
-        # generate path to look for file
-        path = ''
-        if len(x) == 1:
-            path = f'/{i}/{i}.txt'
-        else:
-            for num in x[:-1]:
-                path += f'/{num}'
-            path += f'/{i}/{i}.txt'
+        path = generate_path_to_gutenberg_file(i)
         if exists(raw_files + path):
             existing.append(i)
             print(i)
             # if file exists at the path, start cleaning text
             with open(raw_files + path, 'r') as file:
                 uncleaned_str = file.read()
-                # removing beginning and end meta info
-                split_beginning = re.split('\*\*\*\s?START OF.*?\n?.*?\*\*\*', uncleaned_str)
-                without_beginning = split_beginning[1] if len(split_beginning) > 1 else uncleaned_str
-                split_end = re.split('\*\*\*\s?END OF.*?\n?.*?\*\*\*', without_beginning)
-                without_end = split_end[0] if len(split_end) > 1 else without_beginning
-                # removing footnotes and underscores
-                cleaned = re.sub('\[.*?\]', '', without_end)
-                cleaned = re.sub('_', '', cleaned)
-                # removing some remaining meta info
-                cleaned = re.sub('End of the Project Gutenberg EBook.*?\n', '', cleaned)
-                cleaned = re.sub('Produced by .*?HTML version by.*?\n', '', cleaned)
+                cleaned = clean_gutenberg_text_from_one_file(uncleaned_str)
                 cleaned_texts.append(cleaned)
     # save cleaned text
-    file_name = f'cleaned_texts_from_{begin_at}_to_{end_at}.txt'
-    text_file = open(root + '/data/gutenberg/' + file_name, 'w', encoding="utf-8")
+    filename = f'cleaned_texts_from_{begin_at}_to_{end_at}.txt'
+    filepath = root + '/data/gutenberg/' + filename
     cleaned_text_string = "".join(cleaned_texts)
-    text_file.write(cleaned_text_string)
-    text_file.close()
-    print(f'saved {len(cleaned_texts)} cleaned texts to file {file_name}')
+    utils.save_string_to_txt_file(filepath, cleaned_text_string)
+    print(f'saved {len(cleaned_texts)} cleaned texts to file {filename}')
     return cleaned_text_string
+
+
+def generate_path_to_gutenberg_file(i):
+    """
+    generate a path to a gutenberg file, based on the number of the file
+    example: number 11 would be found in /1/11/11.txt, 1100 in /1/1/0/1100/1100.txt etc.
+    :param i: number of the file named [number].txt
+    :return: complete path to the file relative to the root of the gutenberg corpus
+    """
+    x = [int(a) for a in str(i)]
+    # generate path to look for file
+    path = ''
+    if len(x) == 1:
+        path = f'/{i}/{i}.txt'
+    else:
+        for num in x[:-1]:
+            path += f'/{num}'
+        path += f'/{i}/{i}.txt'
+    return path
+
+
+def clean_gutenberg_text_from_one_file(f_text):
+    """
+    clean the text from a gutenberg file from metadata, so that pure text remains
+    :param f_text: the text as read from the file
+    :return: cleaned text
+    """
+    # removing beginning and end meta info
+    split_beginning = re.split('\*\*\*\s?START OF.*?\n?.*?\*\*\*', f_text)
+    without_beginning = split_beginning[1] if len(split_beginning) > 1 else f_text
+    split_end = re.split('\*\*\*\s?END OF.*?\n?.*?\*\*\*', without_beginning)
+    without_end = split_end[0] if len(split_end) > 1 else without_beginning
+    # removing footnotes and underscores
+    cleaned = re.sub('\[.*?\]', '', without_end)
+    cleaned = re.sub('_', '', cleaned)
+    # removing some remaining meta info
+    cleaned = re.sub('End of the Project Gutenberg EBook.*?\n', '', cleaned)
+    cleaned = re.sub('Produced by .*?HTML version by.*?\n', '', cleaned)
+    return cleaned
 
 
 preprocess_gutenberg_dump(8001, 16000)
