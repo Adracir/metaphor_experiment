@@ -19,10 +19,8 @@ def output_to_plot(filename, pos="all"):
     test_statistic = pos_df['test_statistic'].tolist()
     p_value = pos_df['p_value'].tolist()
     # title
-    # TODO: test if works with nested directories, too
-    filename_parts = re.search('(.*?\/)(.*?)(\..*)', filename)
+    filename_parts = re.search(r'(.*?\/)(.*?)(\..*)', filename)
     file_info = filename_parts.group(2)
-    # TODO: test if works like this, test if can be one liner
     split_prefix = file_info.split('-')
     prefix = split_prefix[0]
     splitted_infos = file_info.split('_')
@@ -31,16 +29,14 @@ def output_to_plot(filename, pos="all"):
     # prepare axes
     x = np.arange(len(similarities))
     ax = plt.gca()
-    # TODO: maybe start with a little spacing on the left
     ax.set_xlim(0, len(metaphor_names))
-    plt.xticks(x, metaphor_names, rotation ='vertical')
+    plt.xticks(x, metaphor_names, rotation='vertical')
     plt.xlabel("Metaphors")
     plt.ylabel('Similarities')
     # plot similarities
     plt.plot(x, similarities, 'r-', label=f"Similarity between domains {splitted_infos[1]}")
     # plot baseline performance
     plt.plot(x, baseline_performance, 'b-', label=f"Similarity to random baseline {splitted_infos[1]}")
-    # TODO: make less verbose?
     # make significance visible
     negative_lgd_label = False
     positive_lgd_label = False

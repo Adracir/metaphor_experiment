@@ -41,13 +41,11 @@ def confront_results_for_one_param(parameter, baselines):
     """
     collect relevant info from all results (results/all-values.csv) that allow closer interpretation of one parameter
     shaping the values, differentiating values from two different baselines
-    save these infos to csv
+    save these info to csv
     :param parameter: one of "metaphor", "pos", "corpus", "weighted", "method". Defines parameter from which perspective
     the results can be analyzed closer
     :param baselines: list of strings defining the baselines to be used
     """
-    # TODO: maybe generate file with IDs that contain all possibilities for the parameters and make stuff less random
-    #  and complex to use
     # prepare output file
     output_file_path = f'results/confront_files/{parameter}_confront.csv'
     to_be_calculated = ['mean_baseline_', 'mean_test_stat_', 'mean_p_value_', 'amount_pos_sign_',
@@ -67,7 +65,7 @@ def confront_results_for_one_param(parameter, baselines):
         bl_dfs = []
         for baseline in baselines:
             bl_dfs.append(filtered_df[filtered_df['baseline'] == baseline])
-        # calculate needed values. mean similarity should be the same, as is independent from baseline
+        # calculate needed values. mean similarity should be the same, as it is independent of baseline
         mean_similarity = np.mean(filtered_df['similarity_value'].tolist())
         mean_vals = calculate_mean_values_from_dfs(bl_dfs, ['baseline_value', 'test_stat', 'p_value'])
         amount_vals = calculate_amounts_from_dfs(bl_dfs, ['pos_sign', 'pos_insign', 'neg_sign', 'neg_insign'])
@@ -101,7 +99,8 @@ def metaphor_confront_for_one_param(parameter):
         filtered_df = df[df['metaphor'] == metaphor]
         param_dfs = [filtered_df[filtered_df[parameter] == param_value] for param_value in param_values]
         # calculate needed values
-        mean_vals = calculate_mean_values_from_dfs(param_dfs, ['similarity_value', 'baseline_value', 'test_stat','p_value'])
+        mean_vals = calculate_mean_values_from_dfs(param_dfs, ['similarity_value', 'baseline_value', 'test_stat',
+                                                               'p_value'])
         amount_vals = calculate_amounts_from_dfs(param_dfs, ['pos_sign', 'pos_insign', 'neg_sign', 'neg_insign'])
         utils.write_info_to_csv(output_file_path, [metaphor] + mean_vals + amount_vals, 'a')
 
@@ -148,3 +147,9 @@ def calculate_amounts_from_dfs(dfs, amount_names):
                 amounts.append(len(sign_df.index))
     return amounts
 
+
+# add results to summary all-values.csv file
+# append_result_summary_val_copy(["savedBL"])
+# generate confront files
+'''for param in ["metaphor", "pos", "corpus", "weighted", "method"]:
+   confront_results_for_one_param(param)'''

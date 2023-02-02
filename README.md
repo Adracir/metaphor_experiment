@@ -1,6 +1,6 @@
 # metaphor_experiment
 
-a project for university, trying to explore common metaphors using word embeddings
+a university project, trying to explore common metaphors using word embeddings
 
 ## Requirements
 
@@ -35,10 +35,18 @@ of GitHub. The following list clarifies the project structure and mentions omitt
   - contains ``human_relatedness.csv``, based on Rubenstein and Goodenough (1965), used for embedding evaluation
   - contains ``word_sets.csv``, the words belonging to different metaphors, divided in two domains per metaphor, used for experiment
   - contains ``random_vector_sets.npy`` for both corpora, used as baseline (*savedBL*)
-  - subfolders ``gutenberg`` and ``wiki`` are omitted. They contain the raw data from the wikipedia and gutenberg dump, cleaned
-  files with raw text, index files, and other resources concerning the corpora.
+  - subfolder ``gutenberg`` 
+    - contains small sample of cleaned text (``cleaned_texts_from_1_to_25.txt``). The cleaned text files actually used 
+    in the experiment are omitted here
+    - contains a list of english and american novelists (``english_american_authors.txt``) used to filter the gutenberg index files
+    - contains the filtered list of indices (``indices.txt``) of gutenberg texts used in the experiment and the corresponding lookup file with more information for each index (``indices_lookup.txt``)
+    - gutenberg index files and the raw texts are omitted
+  - subfolder ``wiki`` 
+    - contains small sample of cleaned text (``cleaned_texts_from_1_to_100.txt``). The cleaned text files actually used 
+    in the experiment are omitted here
+    - the raw wikipedia dump (xml format) is omitted
 - ``models``:
-  - trained KeyedVectors are omitted
+  - trained KeyedVectors and the whole folder are omitted
 - ``results``:
   - contains all CSV files with the results for the executed experiments with all parameter settings
   - subfolder ``confront_files`` contains condensed data from the results for the analysis of each parameter
