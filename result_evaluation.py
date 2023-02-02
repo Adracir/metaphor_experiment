@@ -72,39 +72,6 @@ def confront_results_for_one_param(parameter, baselines):
         utils.write_info_to_csv(output_file_path, [param_value, mean_similarity] + mean_vals + amount_vals, 'a')
 
 
-# TODO: maybe remove this and the corresponding files. Is it even mentioned in text?
-def metaphor_confront_for_one_param(parameter):
-    """
-    analyze different metaphors from the perspective of a parameter, trying to provide the data for an answer on the
-    question: does the parameter have an impact on the results for the different metaphors?
-    save info to csv file
-    :param parameter: one of "corpus", "weighted", "method", "pos"
-    """
-    # prepare output file
-    output_file_path = f'results/confront_files/{parameter}_metaphor_confront.csv'
-    # read all_values.csv
-    df = pd.read_csv('results/all-values.csv')
-    param_values = set(df[parameter].tolist())
-    to_be_calculated = ['mean_similarity_', 'mean_baseline_', 'mean_test_stat_', 'mean_p_value_', 'amount_pos_sign_',
-                        'amount_pos_insign_', 'amount_neg_sign_', 'amount_neg_insign_']
-    csv_headings = []
-    for calculation in to_be_calculated:
-        for param_value in param_values:
-            csv_headings.append(calculation + param_value)
-
-    utils.write_info_to_csv(output_file_path, ['metaphor'] + csv_headings)
-    # iterate metaphors
-    for metaphor in set(df['metaphor'].tolist()):
-        # prepare dataframes
-        filtered_df = df[df['metaphor'] == metaphor]
-        param_dfs = [filtered_df[filtered_df[parameter] == param_value] for param_value in param_values]
-        # calculate needed values
-        mean_vals = calculate_mean_values_from_dfs(param_dfs, ['similarity_value', 'baseline_value', 'test_stat',
-                                                               'p_value'])
-        amount_vals = calculate_amounts_from_dfs(param_dfs, ['pos_sign', 'pos_insign', 'neg_sign', 'neg_insign'])
-        utils.write_info_to_csv(output_file_path, [metaphor] + mean_vals + amount_vals, 'a')
-
-
 def calculate_mean_values_from_dfs(dfs, value_names):
     """
     calculate mean values in given pandas dataframes
@@ -146,10 +113,3 @@ def calculate_amounts_from_dfs(dfs, amount_names):
                 sign_df = filtered_df[filtered_df['p_value'] < 0.05]
                 amounts.append(len(sign_df.index))
     return amounts
-
-
-# add results to summary all-values.csv file
-# append_result_summary_val_copy(["savedBL"])
-# generate confront files
-'''for param in ["metaphor", "pos", "corpus", "weighted", "method"]:
-   confront_results_for_one_param(param)'''

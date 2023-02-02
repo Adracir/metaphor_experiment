@@ -46,12 +46,13 @@ def normalize_and_reverse_distances(distances, distance_measure):
     :param distances: array of calculated distances
     :param distance_measure: one of 'cosine', 'manhattan', 'canberra', 'euclidian'. Determines used similarity/distance
     measure
-    :return: array of similarities between 0 and 1, 1 being most similar
+    :return: array of similarities between -1 and 1, 1 being most similar, -1 being most dissimilar
     """
+    max_distance = max(distances)
     for i in range(len(distances)):
         d = distances[i]
         if distance_measure != 'cosine':
-            d_normalized = d / max(distances)
+            d_normalized = d / max_distance * 2
         else:
             d_normalized = d
         distances[i] = 1 - d_normalized

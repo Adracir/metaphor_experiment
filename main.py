@@ -1,6 +1,7 @@
 import calc
 import plot
 import utils
+import result_evaluation
 import pandas as pd
 import random
 import numpy as np
@@ -170,12 +171,18 @@ if __name__ == '__main__':
     '''for measure in ["cosine", "canberra", "euclidian", "manhattan"]:
         for weight in [True, False]:
             execute_experiment(keyed_vectors1, 'word2vec_gutenberg_1-8000u16001-26000_skipgram',
-                               random_vector_sets=random_vector_sets1, similarity_measure=measure, weights=weight)
+                               random_vector_sets=random_vector_sets1, prefix='savedBL', similarity_measure=measure, weights=weight)
             execute_experiment(keyed_vectors2, 'word2vec_wiki_1-200000_skipgram', 
-                               random_vector_sets=random_vector_sets2, similarity_measure=measure, weights=weight)
+                               random_vector_sets=random_vector_sets2, prefix='savedBL', similarity_measure=measure, weights=weight)
+            execute_experiment(keyed_vectors1, 'word2vec_gutenberg_1-8000u16001-26000_skipgram',
+                               random_vector_sets=create_random_word_vector_sets(250, keyed_vectors1, 24),
+                               prefix='mixedBL', similarity_measure=measure, weights=weight)
+            execute_experiment(keyed_vectors2, 'word2vec_wiki_1-200000_skipgram',
+                               random_vector_sets=create_random_word_vector_sets(250, keyed_vectors2, 24),
+                               prefix='mixedBL', similarity_measure=measure, weights=weight)
             print(f'measure {measure}, weight {weight} done')'''
     # visualize all results in plots
-    for measure in ["cosine", "canberra", "euclidian", "manhattan"]:
+    '''for measure in ["cosine", "canberra", "euclidian", "manhattan"]:
         for pos in ["all", "ADJ", "VERB", "NOUN"]:
             for pref in ["savedBL", "mixedBL"]:
                 plot.output_to_plot(f'results/{pref}-word2vec_gutenberg_1-8000u16001-26000_skipgram_{measure}_'
@@ -185,4 +192,9 @@ if __name__ == '__main__':
                 plot.output_to_plot(f'results/{pref}-word2vec_wiki_1-200000_skipgram_{measure}_'
                                     f'all-ADJ-VERB-NOUN_weighted_results.csv', pos=pos)
                 plot.output_to_plot(f'results/{pref}-word2vec_wiki_1-200000_skipgram_{measure}_'
-                                    f'all-ADJ-VERB-NOUN_unweighted_results.csv', pos=pos)
+                                    f'all-ADJ-VERB-NOUN_unweighted_results.csv', pos=pos)'''
+    # add results to summary all-values.csv file
+    '''result_evaluation.append_result_summary_val_copy(['mixedBL'])'''
+    # generate confront files
+    for param in ["metaphor", "pos", "corpus", "weighted", "method"]:
+        result_evaluation.confront_results_for_one_param(param, ['savedBL', 'mixedBL'])

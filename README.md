@@ -48,7 +48,7 @@ of GitHub. The following list clarifies the project structure and mentions omitt
 - ``models``:
   - trained KeyedVectors and the whole folder are omitted
 - ``results``:
-  - contains all CSV files with the results for the executed experiments with all parameter settings
+  - contains all CSV files with the results for the executed experiments with all parameter settings. Also contains the same files in xlsx format to enable formatting for a better overview.
   - subfolder ``confront_files`` contains condensed data from the results for the analysis of each parameter
   - subfolder ``plots`` contains diagrams visualizing the results
 

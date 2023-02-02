@@ -1,3 +1,3 @@
-corpus;mean_similarity;mean_baseline_mixedBL;mean_baseline_savedBL;mean_test_stat_mixedBL;mean_test_stat_savedBL;mean_p_value_mixedBL;mean_p_value_savedBL;amount_pos_sign_mixedBL;amount_pos_sign_savedBL;amount_pos_insign_mixedBL;amount_pos_insign_savedBL;amount_neg_sign_mixedBL;amount_neg_sign_savedBL;amount_neg_insign_mixedBL;amount_neg_insign_savedBL
-gutenberg;0,208223117;0,262421979;0,291133967;-9,485646534;-12,19053217;0,044846466;0,023332678;28;21;17;10;252;281;23;8
-wiki;0,242466052;0,220432399;0,249855263;2,494233823;-0,089051427;0,121345162;0,044905502;145;116;44;15;86;168;45;21
+corpus,mean_similarity,mean_baseline_savedBL,mean_baseline_mixedBL,mean_test_stat_savedBL,mean_test_stat_mixedBL,mean_p_value_savedBL,mean_p_value_mixedBL,amount_pos_sign_savedBL,amount_pos_sign_mixedBL,amount_pos_insign_savedBL,amount_pos_insign_mixedBL,amount_neg_sign_savedBL,amount_neg_sign_mixedBL,amount_neg_insign_savedBL,amount_neg_insign_mixedBL
+wiki,-0.33390010111472257,-0.29536719944533746,-0.29365824096796017,-0.1395244659921147,-0.2994427174177353,0.036024557846025804,0.03608729493460834,129,129,21,18,160,161,10,12
+gutenberg,-0.38419287470134494,-0.22557577155835468,-0.225012789687558,-13.103224632308322,-13.278692709395097,0.01809517992072323,0.018045947148830475,24,23,8,8,281,281,7,8
