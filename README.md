@@ -2,6 +2,13 @@
 
 a university project, trying to explore common metaphors using word embeddings
 
+## Context
+
+This work has been done for the examination in the module *Verarbeitung von Textdaten* in the master course *Informationsverarbeitung*
+at the Institute for Digital Humanities at University of Cologne. Further information about the underlying assumptions and
+questions, the theoretical background and the interpretation of the results can be found in a written document in german 
+language passed over in the context of the examination.
+
 ## Requirements
 
 All necessary requirements to run the code can be installed using 
@@ -51,11 +58,3 @@ of GitHub. The following list clarifies the project structure and mentions omitt
   - contains all CSV files with the results for the executed experiments with all parameter settings. Also contains the same files in xlsx format to enable formatting for a better overview.
   - subfolder ``confront_files`` contains condensed data from the results for the analysis of each parameter
   - subfolder ``plots`` contains diagrams visualizing the results
-
-## Context
-
-This work has been done for the examination in the module *Verarbeitung von Textdaten* in the master course *Informationsverarbeitung*
-at the Institute for Digital Humanities at University of Cologne. Further information about the underlying assumptions and
-questions, the theoretical background and the interpretation of the results can be found in a written document in german 
-language passed over in the context of the examination.
-

@@ -29,7 +29,7 @@ def generate_similarities(A, B, distance_measure):
     :param B: target set
     :param distance_measure: one of 'cosine', 'manhattan', 'canberra', 'euclidian'. Determines used similarity/distance
     measure
-    :return: array containing all calculated similarities between all the values of source and target set
+    :return: list containing all calculated similarities between all the values of source and target set
     """
     distances = []
     for a in A:
@@ -43,10 +43,10 @@ def generate_similarities(A, B, distance_measure):
 def normalize_and_reverse_distances(distances, distance_measure):
     """
     normalize distance calculation results and reverse them so that they represent similarities
-    :param distances: array of calculated distances
+    :param distances: list of calculated distances
     :param distance_measure: one of 'cosine', 'manhattan', 'canberra', 'euclidian'. Determines used similarity/distance
     measure
-    :return: array of similarities between -1 and 1, 1 being most similar, -1 being most dissimilar
+    :return: list of similarities between -1 and 1, 1 being most similar, -1 being most dissimilar
     """
     max_distance = max(distances)
     for i in range(len(distances)):

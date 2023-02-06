@@ -6,7 +6,7 @@ import pandas as pd
 
 def output_to_plot(filename, pos="all"):
     """
-    create and save a scattered plot to results/plots from result data from the experiment
+    create and save a line chart from result data from the experiment
     :param filename: path to the result csv file
     :param pos: only one part-of-speech can be shown in one graph, so choose from "ADJ", "all", "VERB" and "NOUN"
     """

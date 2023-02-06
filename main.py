@@ -2,11 +2,13 @@ import calc
 import plot
 import utils
 import result_evaluation
+import embeddings
+import corpora
 import pandas as pd
 import random
 import numpy as np
 import warnings
-from gensim.models import KeyedVectors
+from gensim.models import KeyedVectors, Word2Vec
 
 warnings.filterwarnings(action='ignore')
 
@@ -154,17 +156,35 @@ def create_random_word_vector_sets(num, keyed_vectors, length):
 
 
 if __name__ == '__main__':
-    # load word vectors
+    # clean some text from wikipedia corpus
+    '''corpora.preprocess_wiki_dump(1, 1000)'''
+    # select texts from gutenberg corpus
+    '''corpora.extract_useful_indices_from_gutenberg_index_files(corpora.parse_authors_list())'''
+    # clean some texts from prefiltered gutenberg corpus
+    '''corpora.preprocess_gutenberg_dump(1, 1000)'''
+    # EITHER make new model from scratch
+    '''data = embeddings.preprocess_text_for_word_embedding_creation('data/wiki/cleaned_texts_from_1_to_10000.txt')
+    print('sents preprocessed')
+    model = embeddings.make_word_emb_model(data, sg=1)'''
+    # OR train existing model and save to keyedvectors
+    '''model = Word2Vec.load("models/word2vec_wiki_1-3000_skipgram_better-preprocessing.model")
+    sents = embeddings.preprocess_text_for_word_embedding_creation('data/wiki/cleaned_texts_from_1_to_10000.txt')
+    print('sents preprocessed')
+    model.build_vocab(sents, update=True)
+    model.train(sents, total_examples=model.corpus_count, epochs=10)
+    word_vectors = model.wv
+    word_vectors.save('models/word2vec_wiki_1-10000_skipgram.wordvectors')'''
+    # OR load existing word vectors
     '''keyed_vectors1 = KeyedVectors.load("models/word2vec_gutenberg_1-8000u16001-26000_skipgram.wordvectors", mmap='r')
     keyed_vectors2 = KeyedVectors.load("models/word2vec_wiki_1-200000_skipgram.wordvectors", mmap='r')'''
-    # generate one large set of random vectors per model for all calculations
+    # EITHER generate one large set of random vectors per model for all calculations
     '''random_vector_sets1 = create_random_word_vector_sets(250, keyed_vectors1, 24)
     random_vector_sets2 = create_random_word_vector_sets(250, keyed_vectors2, 24)
     rvs1 = np.asarray(random_vector_sets1)
     np.save('data/gutenberg_random_vector_sets.npy', rvs1)
     rvs2 = np.asarray(random_vector_sets2)
     np.save('data/wiki_random_vector_sets.npy', rvs2)'''
-    # load saved random vectors
+    # OR load saved random vectors
     '''random_vector_sets1 = np.load('data/gutenberg_random_vector_sets.npy')
     random_vector_sets2 = np.load('data/wiki_random_vector_sets.npy')'''
     # calculate all possible results
@@ -194,7 +214,7 @@ if __name__ == '__main__':
                 plot.output_to_plot(f'results/{pref}-word2vec_wiki_1-200000_skipgram_{measure}_'
                                     f'all-ADJ-VERB-NOUN_unweighted_results.csv', pos=pos)'''
     # add results to summary all-values.csv file
-    '''result_evaluation.append_result_summary_val_copy(['mixedBL'])'''
+    '''result_evaluation.append_result_summary_val_copy(['savedBL', 'mixedBL'])'''
     # generate confront files
     for param in ["metaphor", "pos", "corpus", "weighted", "method"]:
         result_evaluation.confront_results_for_one_param(param, ['savedBL', 'mixedBL'])

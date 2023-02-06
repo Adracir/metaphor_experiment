@@ -41,7 +41,7 @@ def confront_results_for_one_param(parameter, baselines):
     """
     collect relevant info from all results (results/all-values.csv) that allow closer interpretation of one parameter
     shaping the values, differentiating values from two different baselines
-    save these info to csv
+    save this info to csv
     :param parameter: one of "metaphor", "pos", "corpus", "weighted", "method". Defines parameter from which perspective
     the results can be analyzed closer
     :param baselines: list of strings defining the baselines to be used
@@ -77,7 +77,7 @@ def calculate_mean_values_from_dfs(dfs, value_names):
     calculate mean values in given pandas dataframes
     :param dfs: list of dataframes to be analyzed
     :param value_names: values to be analyzed, should match column name in dataframe
-    :return: list of amounts, sorted by amount_name first, then dataframe
+    :return: list of values, sorted by value_name first, then dataframe
     """
     value_list = []
     for value_name in value_names:

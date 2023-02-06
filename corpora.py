@@ -52,7 +52,7 @@ def clean_wiki_text_from_one_page(p_text, counter):
     """
     clean the text from a wikipedia page from metadata, so that pure text remains
     :param p_text: page's text as read from dump
-    :param counter:
+    :param counter: number indicating wiki page
     :return: the cleaned text
     """
     # ignores whole page if it starts with #REDIRECT or {{wiktionary (only redirects to other pages)
@@ -246,7 +246,3 @@ def clean_gutenberg_text_from_one_file(f_text):
     cleaned = re.sub('End of the Project Gutenberg EBook.*?\n', '', cleaned)
     cleaned = re.sub('Produced by .*?HTML version by.*?\n', '', cleaned)
     return cleaned
-
-
-# preprocess_wiki_dump(1, 100)
-preprocess_gutenberg_dump(1, 25)

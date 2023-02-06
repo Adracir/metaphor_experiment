@@ -74,18 +74,3 @@ def evaluate_embeddings(keyed_vectors, distance_measure='cosine'):
     embedding_relatedness = calc.normalize_and_reverse_distances(embedding_relatedness, distance_measure)
     print(pearsonr(gold_standard_relatedness, embedding_relatedness))
     print(spearmanr(gold_standard_relatedness, embedding_relatedness))
-
-
-# make new model from scratch
-'''data = preprocess_text_for_word_embedding_creation('data/wiki/cleaned_texts_from_1_to_10000.txt')
-print('sents preprocessed')
-model = make_word_emb_model(data, sg=1)'''
-# train existing model and save to keyedvectors
-'''model = Word2Vec.load("models/word2vec_wiki_1-3000_skipgram_better-preprocessing.model")
-sents = preprocess_text_for_word_embedding_creation('data/wiki/cleaned_texts_from_1_to_10000.txt')
-print('sents preprocessed')
-model.build_vocab(sents, update=True)
-model.train(sents, total_examples=model.corpus_count, epochs=10)
-word_vectors = model.wv
-word_vectors.save('models/word2vec_wiki_1-10000_skipgram.wordvectors')'''
-# evaluate_embeddings(word_vectors)
