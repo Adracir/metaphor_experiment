@@ -216,5 +216,5 @@ if __name__ == '__main__':
     # add results to summary all-values.csv file
     '''result_evaluation.append_result_summary_val_copy(['savedBL', 'mixedBL'])'''
     # generate confront files
-    for param in ["metaphor", "pos", "corpus", "weighted", "method"]:
-        result_evaluation.confront_results_for_one_param(param, ['savedBL', 'mixedBL'])
+    '''for param in ["metaphor", "pos", "corpus", "weighted", "method"]:
+        result_evaluation.confront_results_for_one_param(param, ['savedBL', 'mixedBL'])'''

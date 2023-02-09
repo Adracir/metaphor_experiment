@@ -63,7 +63,7 @@ def t_test(similarities, baseline):
     """
     execute two-sided t-test for set of values and a baseline
     :param similarities: sample observation
-    :param baseline: value standing for the baseline, null hypothesis
+    :param baseline: value of the baseline (similarity of first domain set with random sets)
     :return: test statistic (positive or negative), p-value
     """
     return ttest_1samp(similarities, baseline)

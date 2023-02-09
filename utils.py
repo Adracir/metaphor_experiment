@@ -19,6 +19,5 @@ def save_string_to_txt_file(filepath, string):
     :param filepath: global path where to save the file
     :param string: string to write to the file
     """
-    text_file = open(filepath, 'w', encoding="utf-8")
-    text_file.write(string)
-    text_file.close()
+    with open(filepath, 'w', encoding="utf-8") as text_file:
+        text_file.write(string)

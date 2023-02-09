@@ -1,6 +1,5 @@
 import re
 from xml.etree import ElementTree as ET
-import time
 import os
 from os.path import exists
 
@@ -19,7 +18,6 @@ def preprocess_wiki_dump(begin_at, end_at):
     :param end_at: ends at this page (inclusive)
     :return: cleaned text of the specified pages
     """
-    start = time.time()
     cleaned_texts = []
     counter = 0
     # parse tree and take only text elements
@@ -30,8 +28,6 @@ def preprocess_wiki_dump(begin_at, end_at):
                 if counter < begin_at:
                     continue
                 elif begin_at <= counter <= end_at:
-                    end = time.time()
-                    print(f'time taken before start: {end-start} seconds')
                     # take only inner text
                     p_text = ''.join(elem.itertext())
                     p_text = clean_wiki_text_from_one_page(p_text, counter)
@@ -56,45 +52,43 @@ def clean_wiki_text_from_one_page(p_text, counter):
     :return: the cleaned text
     """
     # ignores whole page if it starts with #REDIRECT or {{wiktionary (only redirects to other pages)
-    if not re.match(r'(#REDIRECT)|(\{\{wiktionary)|(\[\[Wikipedia:Free_On-line_Dictionary_of_Computing/symbols)',
-                    p_text):
-        # removes &quot; (quotation mark)
-        p_text = re.sub('&quot;', '', p_text)
-        # removes everything inside {||} (tables)
-        p_text = re.sub(r'\{\|[\s\S]*?\|\}', '', p_text)
-        # removes everything inside {{}}(references, meta)
-        p_text = re.sub(r'\{\{[\s\S]*?\}\}', '', p_text)
-        # accepts content left over from nested brackets, but cleans up the brackets themselves
-        p_text = re.sub(r'\{\{|\}\}', '', p_text)
-        # removes '' (marks text as italic) and ''' '''(marks text as bold)
-        p_text = re.sub(r'(\'){2,3}', '', p_text)
-        # removes everything inside [[Category: ]] (links to wiki categories)
-        p_text = re.sub(r'\[\[Category\:.*?\]\]', '', p_text)
-        # removes everything inside [[File:]] (image metadata & image description)
-        p_text = re.sub(r'\[\[File:.*?\|+.*(\]\])+', '', p_text)
-        # removes remaining square brackets and chooses what content to keep
-        p_text = re.sub(r'(\[\[.[^\[\]]*?\|)(.*?)(\]\])', repl, p_text)
-        # clean up all [[ ]] that are left
-        p_text = re.sub(r'\[\[|\]\]', '', p_text)
-        # removes leftovers from tables
-        p_text = re.sub(r'\|.[^ \n]*', '', p_text)
-        # clean up also links in [ ]
-        p_text = re.sub(r'\[.*?\]', '', p_text)
-        # br-tags (makes next step less complex, especially for long lists
-        p_text = re.sub('<br>', ' ', p_text)
-        # removes remaining html tags and their content
-        p_text = re.sub(r'(<\w+?.[^\/]*?>[\s\S]*?<\/\w+?>)|(<\w+?.*?\/>)', '', p_text)
-        # removes html comments
-        p_text = re.sub('<!--.*?-->', '', p_text)
-        # removes stars
-        p_text = re.sub(r'\*', '', p_text)
-        # removes newlines
-        p_text = re.sub('\n', ' ', p_text)
-        print(f'text {counter} cleaned')
-        return p_text
-    else:
+    if re.match(r'(#REDIRECT)|(\{\{wiktionary)|(\[\[Wikipedia:Free_On-line_Dictionary_of_Computing/symbols)', p_text):
         print(f'text {counter} ignored')
-    return ''
+        return ''
+    # removes &quot; (quotation mark)
+    p_text = re.sub('&quot;', '', p_text)
+    # removes everything inside {||} (tables)
+    p_text = re.sub(r'\{\|[\s\S]*?\|\}', '', p_text)
+    # removes everything inside {{}}(references, meta)
+    p_text = re.sub(r'\{\{[\s\S]*?\}\}', '', p_text)
+    # accepts content left over from nested brackets, but cleans up the brackets themselves
+    p_text = re.sub(r'\{\{|\}\}', '', p_text)
+    # removes '' (marks text as italic) and ''' '''(marks text as bold)
+    p_text = re.sub(r'(\'){2,3}', '', p_text)
+    # removes everything inside [[Category: ]] (links to wiki categories)
+    p_text = re.sub(r'\[\[Category\:.*?\]\]', '', p_text)
+    # removes everything inside [[File:]] (image metadata & image description)
+    p_text = re.sub(r'\[\[File:.*?\|+.*(\]\])+', '', p_text)
+    # removes remaining square brackets and chooses what content to keep
+    p_text = re.sub(r'(\[\[.[^\[\]]*?\|)(.*?)(\]\])', repl, p_text)
+    # clean up all [[ ]] that are left
+    p_text = re.sub(r'\[\[|\]\]', '', p_text)
+    # removes leftovers from tables
+    p_text = re.sub(r'\|.[^ \n]*', '', p_text)
+    # clean up also links in [ ]
+    p_text = re.sub(r'\[.*?\]', '', p_text)
+    # br-tags (makes next step less complex, especially for long lists
+    p_text = re.sub('<br>', ' ', p_text)
+    # removes remaining html tags and their content
+    p_text = re.sub(r'(<\w+?.[^\/]*?>[\s\S]*?<\/\w+?>)|(<\w+?.*?\/>)', '', p_text)
+    # removes html comments
+    p_text = re.sub('<!--.*?-->', '', p_text)
+    # removes stars
+    p_text = re.sub(r'\*', '', p_text)
+    # removes newlines
+    p_text = re.sub('\n', ' ', p_text)
+    print(f'text {counter} cleaned')
+    return p_text
 
 
 def repl(matchobj):
@@ -131,8 +125,7 @@ def extract_useful_indices_from_gutenberg_index_files(author_list):
     indices = []
     # assign directory
     directory = 'data/gutenberg'
-    with open('data/gutenberg/indices_lookup.txt', 'w', encoding='utf8') as i_f:
-        i_f.write('----- START -----\n')
+    utils.save_string_to_txt_file('data/gutenberg/indices_lookup.txt', '----- START -----\n')
     # iterate over files in that directory
     for filename in os.listdir(directory):
         f = os.path.join(directory, filename)
@@ -160,21 +153,21 @@ def extract_useful_indices_from_gutenberg_index_files(author_list):
                             last_read_relevant_title = line
                             indices.append(possible_author_match.group(4))
                             # writes info to lookup file
-                            with open('data/gutenberg/indices_lookup.txt', 'a', encoding='utf8') as i_f:
-                                i_f.write(f'FILE:   {filename}\n')
-                                i_f.write(f'LINE:   {line}')
-                                i_f.write(f'TITLE:  {title}\n')
-                                i_f.write(f'AUTHOR: {author_name}\n')
-                                i_f.write(f'INDEX:  {possible_author_match.group(4)}-----\n')
+                            with open('data/gutenberg/indices_lookup.txt', 'a', encoding='utf8') as lookup_file:
+                                lookup_file.write(f'FILE:   {filename}\n')
+                                lookup_file.write(f'LINE:   {line}')
+                                lookup_file.write(f'TITLE:  {title}\n')
+                                lookup_file.write(f'AUTHOR: {author_name}\n')
+                                lookup_file.write(f'INDEX:  {possible_author_match.group(4)}-----\n')
                     # if language is explicitly mentioned and not english, remove corresponding title from list
                     elif lang_match:
                         lang = re.sub(r'\s+', '', lang_match.group(2))
                         if (lang != 'English') and (last_read_title == last_read_relevant_title):
                             indices.pop()
     # write all generated indices to file
-    with open('data/gutenberg/indices.txt', 'w') as i_f:
+    with open('data/gutenberg/indices.txt', 'w') as index_file:
         for index in indices:
-            i_f.write(f"{index}")
+            index_file.write(f"{index}")
     return indices
 
 
