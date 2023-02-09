@@ -5,7 +5,7 @@ from os.path import exists
 
 import utils
 
-root = 'C:/Users/adrac/Documents/Uni/Embeddings/metaphor_experiment'
+ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
 WIKI_DUMP = "/data/wiki/enwiki-latest-pages-articles-multistream.xml"
 namespaces = {'wiki_ns': 'http://www.mediawiki.org/xml/export-0.10/'}
 AUTHOR_LIST = "data/gutenberg/english_american_authors.txt"
@@ -21,7 +21,7 @@ def preprocess_wiki_dump(begin_at, end_at):
     cleaned_texts = []
     counter = 0
     # parse tree and take only text elements
-    for event, elem in ET.iterparse(root + WIKI_DUMP, events=("start", "end")):
+    for event, elem in ET.iterparse(ROOT_DIR + WIKI_DUMP, events=("start", "end")):
         if event == "end":
             if elem.tag == '{' + namespaces.get('wiki_ns') + '}text':
                 counter += 1
@@ -37,7 +37,7 @@ def preprocess_wiki_dump(begin_at, end_at):
                     break
     # save cleaned text
     filename = f'cleaned_texts_from_{begin_at}_to_{end_at}.txt'
-    filepath = root + '/data/wiki/' + filename
+    filepath = ROOT_DIR + '/data/wiki/' + filename
     cleaned_text_string = "".join(cleaned_texts)
     utils.save_string_to_txt_file(filepath, cleaned_text_string)
     print(f'saved {len(cleaned_texts)} cleaned texts to file {filename}')
@@ -195,7 +195,7 @@ def preprocess_gutenberg_dump(begin_at, end_at):
                 cleaned_texts.append(cleaned)
     # save cleaned text
     filename = f'cleaned_texts_from_{begin_at}_to_{end_at}.txt'
-    filepath = root + '/data/gutenberg/' + filename
+    filepath = ROOT_DIR + '/data/gutenberg/' + filename
     cleaned_text_string = "".join(cleaned_texts)
     utils.save_string_to_txt_file(filepath, cleaned_text_string)
     print(f'saved {len(cleaned_texts)} cleaned texts to file {filename}')
